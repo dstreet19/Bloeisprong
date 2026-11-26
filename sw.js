@@ -1,6 +1,6 @@
 // Bloeisprong service worker: maakt het spel offline speelbaar.
 // Verhoog VERSIE bij elke nieuwe uitgave, dan halen de toestellen de nieuwe bestanden op.
-const VERSIE = 'bloeisprong-v4';
+const VERSIE = 'bloeisprong-v5';
 const LETTERS = 'bloeisprong-letters';
 const KERN = [
   './',

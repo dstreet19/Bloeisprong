@@ -28,6 +28,21 @@ De voortgang staat alleen op het toestel. Maak daarom af en toe een back-up:
 - **Terugzetten:** op het scherm "Wie speelt er?" → **Back-up terugzetten** → plak de code of kies het bestand. Staat de speler al op het toestel, dan vraagt het spel eerst of je hem wil vervangen.
 - De back-up bevat de voortgang, zaadjes, thuistuin, instellingen en de pincode van één speler.
 
+## Cadeautjes en Nieuw-merkjes
+
+Krijg je iets nieuws, dan komt je wezentje een **pakje brengen**. Tik op het pakje om het uit te pakken: er vliegt confetti rond, je hoort een vrolijk geluidje en je leest wat het is en wat het doet. Dat gebeurt bij:
+
+- een nieuw **voorwerp** voor je thuistuin,
+- een nieuwe **bloem** in je herbarium (ook de nachtbloemen),
+- een nieuw **tuinwonder** of de **nachttuin**,
+- een nieuwe **stem** in het lied van een landschap (de bas, de akkoorden, de tweede stem en zo verder). Elke stem krijgt zijn cadeautje de eerste keer dat je hem hoort.
+
+Win je meer dan één ding tegelijk, dan komen de pakjes na elkaar ("Cadeautje 1 van 2"). De kaart gaat pas weg als je zelf op **Leuk, bedankt!** tikt. Daarna zie je de gewone winstkaart.
+
+Wat nieuw is, krijgt een **Nieuw-merkje**: een rood bolletje op het tabblad (Kaart, Herbarium of Thuistuin) en een klein label bij het voorwerp, de bloem of het landschap. Het merkje blijft staan tot je het nieuwe ding aantikt. Staat op het toestel "beweging verminderen" aan, dan blijft de confetti weg.
+
+Het versienummer (bv. "Bloeisprong v5") staat klein onderaan het scherm "Wie speelt er?". Het is gelijk aan het nummer in `sw.js`, zodat je op een toestel meteen ziet of je de nieuwste versie hebt.
+
 ## Grapjes, weetjes en wijsheden
 
 Tik in de thuistuin op je wezentje, of kijk op de winstkaart na een tuin: het wezentje vertelt dan iets.
@@ -70,7 +85,7 @@ README.md               deze uitleg
 ## Een nieuwe versie uitbrengen
 
 1. Vervang de gewijzigde bestanden op GitHub.
-2. Verhoog in `sw.js` het nummer in `const VERSIE = 'bloeisprong-v4';` (bv. naar `v5`).
+2. Verhoog in `sw.js` het nummer in `const VERSIE = 'bloeisprong-v5';` (bv. naar `v6`) en in `index.html` het nummer in `const APPV='v5';` (dat staat in het menu).
 3. Het spel start altijd meteen uit het geheugen van het toestel, ook bij traag internet. Is er een nieuwe versie, dan wordt die op de achtergrond opgehaald en zie je ze **de volgende keer** dat je het spel opent.
 
 De voortgang van de spelers blijft bij een update gewoon bewaard.
