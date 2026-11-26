@@ -1,0 +1,19 @@
+{
+  "name": "Bloeisprong",
+  "short_name": "Bloeisprong",
+  "description": "Een rustig puzzelspel: spring als een schaakstuk en laat elke knop in de tuin bloeien.",
+  "lang": "nl",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dff5ea",
+  "theme_color": "#3fa877",
+  "categories": ["games", "kids", "music"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

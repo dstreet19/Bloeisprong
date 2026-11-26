@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Een rustig puzzelspel: spring als een schaakstuk en laat elke knop in de tuin bloeien.">
+<meta name="theme-color" content="#3fa877">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bloeisprong">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Bloeisprong</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* VOICE: rustig, fris, speels: een tuin op zondagochtend, geen klok
+   IDEA: een schaakbord dat een tuin is; elke tuin voegt een stukje toe aan het lied van het landschap
+   PICTURE: het speelbord, de seizoenskaart, het herbarium en je eigen thuistuin
+   COLOUR and TYPE: seizoenskleuren (lente, zomer, herfst, winter), koraal accent; Fredoka + Nunito
+   LAYOUT: één kolom; tabs Spel, Kaart, Herbarium, Thuistuin; overlays voor uitleg en winst */
+:root{color-scheme:light dark;
+--bg:light-dark(#dff5ea,#0f2a26);--bg2:light-dark(#eef8ff,#142235);
+--ink:light-dark(#20403a,#e6f5ee);--soft:light-dark(#55776d,#9fc2b6);
+--board:light-dark(#bfe6d0,#1d4a40);--soil:light-dark(#f6e6d2,#3b3a2f);--soil2:light-dark(#fff7ec,#4a4836);
+--card:light-dark(#ffffff,#1b3a34);--leaf:light-dark(#3fa877,#6fd6a2);--coral:light-dark(#ff7f6e,#ff9a8a);--sun:#ffd166;--water:transparent}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;
+background:linear-gradient(170deg,var(--bg),var(--bg2));background-attachment:fixed;display:flex;justify-content:center;transition:background .8s}
+#amb{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.amb{position:absolute;top:-30px;opacity:.55;animation:drift linear infinite}
+.amb-blossom{width:10px;height:12px;background:#ffc7d9;border-radius:60% 0 60% 0}
+.amb-leaf{width:14px;height:10px;background:#e8873a;border-radius:0 80% 0 80%}
+.amb-snow{width:7px;height:7px;background:#fff;border-radius:50%;box-shadow:0 0 4px rgba(120,160,200,.7)}
+.amb-pollen{width:5px;height:5px;background:#ffd84d;border-radius:50%;top:auto;bottom:-20px;animation-name:rise2}
+.app{position:relative;z-index:1;width:min(100%,520px);padding:calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font:700 34px/1.05 Fredoka,sans-serif;margin:0;letter-spacing:-.5px}
+h1 span{color:var(--coral)}
+.seeds{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:6px 12px;font-weight:800;box-shadow:0 4px 14px rgba(30,80,60,.12)}
+.seeds svg{width:18px;height:18px}
+nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--card);border-radius:18px;padding:4px;margin:12px 0;box-shadow:0 4px 14px rgba(30,80,60,.12)}
+nav button{border:0;background:none;color:var(--soft);font:800 14px Nunito,sans-serif;padding:9px 2px;border-radius:14px;min-height:40px;cursor:pointer}
+nav button.on{background:var(--leaf);color:#fff}
+.view[hidden]{display:none}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.lvl{display:flex;align-items:center;gap:6px;font-weight:800;font-size:15px}
+.lvl small{display:block;font-weight:700;color:var(--soft);font-size:13px;line-height:1.2}
+.round{border:0;background:var(--card);color:var(--ink);width:36px;height:36px;border-radius:50%;font:700 19px Nunito,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(30,80,60,.12);flex:none}
+.round:disabled{opacity:.3;cursor:default}.round[hidden]{display:none}
+.chip{border:0;background:var(--card);color:var(--soft);font:800 14px Nunito,sans-serif;border-radius:999px;padding:8px 14px;min-height:36px;cursor:pointer;box-shadow:0 2px 8px rgba(30,80,60,.12)}
+.chip.on{background:var(--coral);color:#fff}
+.board{position:relative;display:grid;gap:5px;padding:9px;background:var(--board);border-radius:24px;transition:background .8s;
+box-shadow:inset 0 2px 10px rgba(0,0,0,.08),0 14px 34px rgba(40,110,80,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.cell{aspect-ratio:1;border-radius:13px;position:relative;display:flex;align-items:center;justify-content:center}
+.cell.grass{background:var(--water)}
+.cell.grass svg{width:58%;opacity:.6}
+.cell.land{background:var(--soil);box-shadow:inset 0 -4px 0 rgba(120,80,40,.13);cursor:pointer;transition:background .3s}
+.cell.visited{background:var(--soil2)}
+.cell.can::after{content:"";position:absolute;inset:24%;border-radius:50%;border:3px solid var(--leaf);animation:pulse 1.8s ease-in-out infinite}
+.cell.hint{box-shadow:0 0 0 3px var(--sun),0 0 22px var(--sun)}
+.bud{width:48%;height:48%}
+.flower{width:88%;height:88%;animation:bloom .7s cubic-bezier(.3,1.6,.5,1) both}
+.flower.sing{animation:sing .5s ease}
+.badge{position:absolute;right:6%;top:4%;width:40%;height:40%;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;
+font-size:clamp(11px,3vw,17px);box-shadow:0 2px 6px rgba(0,0,0,.15);color:var(--coral);font-variant-emoji:text}
+.token{position:absolute;left:0;top:0;pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;transition:transform .42s cubic-bezier(.4,1.35,.5,1)}
+.token .in{width:72%;height:72%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e9f3ee);color:#20403a;display:flex;align-items:center;justify-content:center;
+box-shadow:0 7px 14px rgba(20,60,45,.3),inset 0 -4px 0 rgba(0,0,0,.07);font-variant-emoji:text}
+.token .in.hop{animation:hop .42s ease}.token .in.morph{animation:morph .6s ease}
+.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.tools button,.btn{border:0;background:var(--card);color:var(--ink);font:700 14px Nunito,sans-serif;border-radius:16px;min-height:52px;padding:6px 4px;cursor:pointer;
+box-shadow:0 4px 12px rgba(30,80,60,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.tools button b{font-size:19px;line-height:1}
+.tools button:active,.btn:active{transform:translateY(1px)}
+button:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.tools button.nudge{animation:nudge 1s ease 2}
+.progress{margin-top:16px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px}
+.vine{flex:1;height:12px;background:var(--card);border-radius:99px;overflow:hidden}
+.vine i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--leaf),#9be15d);transition:width .5s}
+.foot{margin-top:12px;color:var(--soft);font-size:14px;text-align:center}
+h2.t{font:700 26px/1.1 Fredoka,sans-serif;margin:4px 0 4px}
+.muted{color:var(--soft);font-size:14px;margin:0 0 12px}
+.season{margin:18px 0 8px;display:flex;align-items:baseline;justify-content:space-between}
+.season h3{font:700 21px Fredoka,sans-serif;margin:0}
+.chap{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:10px 12px;margin-bottom:8px;box-shadow:0 3px 10px rgba(30,80,60,.1)}
+.chap.locked{opacity:.45}
+.chap .ic{width:40px;height:40px;border-radius:12px;background:var(--board);flex:none;display:flex;align-items:center;justify-content:center}
+.chap .ic svg{width:30px;height:30px}
+.chap .nm{flex:1;font-weight:800;line-height:1.25}
+.dots{display:flex;gap:3px;margin-top:4px}
+.dots i{width:9px;height:9px;border-radius:50%;background:light-dark(#dfe9e4,#2e4d46)}
+.dots i.on{background:var(--leaf)}
+.chap .round{width:40px;height:40px;font-size:15px}
+.herb{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.sp{background:var(--card);border-radius:18px;padding:12px;text-align:center;box-shadow:0 3px 10px rgba(30,80,60,.1)}
+.sp svg{width:72px;height:72px}
+.sp b{display:block;margin-top:4px}
+.sp p{margin:2px 0 0;font-size:13px;color:var(--soft);line-height:1.35}
+.sp.locked svg{filter:grayscale(1);opacity:.22}
+.garden{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-radius:22px;overflow:hidden;box-shadow:0 14px 34px rgba(40,110,80,.18)}
+.gt{aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.gt svg{width:92%;height:92%;overflow:visible}
+.gt svg.pop{animation:bloom .5s cubic-bezier(.3,1.6,.5,1)}
+.pal{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 6px;scroll-snap-type:x proximity}
+.pal button{flex:none;width:78px;border:0;background:var(--card);color:var(--ink);border-radius:16px;padding:6px 4px;cursor:pointer;font:700 12px/1.2 Nunito,sans-serif;
+box-shadow:0 3px 10px rgba(30,80,60,.1);scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pal button svg{width:40px;height:40px}
+.pal button.on{outline:3px solid var(--coral)}
+.pal button:disabled{opacity:.4;cursor:default}
+.pal .cost{color:var(--soft);font-size:11px}
+.spin{animation:spin 6s linear infinite;transform-box:fill-box;transform-origin:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);opacity:0;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:16px;font-weight:700;font-size:15px;
+max-width:min(92vw,420px);text-align:center;transition:.35s;z-index:30;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.ov{position:fixed;inset:0;background:rgba(15,40,34,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+.ov.show{display:flex}
+.card{background:var(--card);border-radius:26px;padding:22px 20px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25);text-align:center;animation:rise .5s cubic-bezier(.3,1.4,.5,1);max-height:92vh;overflow:auto}
+.card h2{font:700 28px/1.1 Fredoka,sans-serif;margin:4px 0 8px}
+.card p{margin:0 0 10px;color:var(--soft)}
+.card .row{display:flex;gap:8px;margin-top:14px}
+.card .btn{flex:1}
+.btn.go{background:var(--leaf);color:#fff}
+.rew{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0}
+.rew span{background:var(--board);border-radius:999px;padding:4px 10px;font-weight:800;font-size:13px}
+.newsp{display:flex;align-items:center;gap:10px;text-align:left;background:light-dark(#fff6ea,#2a3a30);border-radius:16px;padding:8px 12px;margin:8px 0}
+.newsp svg{width:52px;height:52px;flex:none}
+.song{background:light-dark(#eef8f2,#24443c);border-radius:16px;padding:10px 12px;margin-top:8px;text-align:left;font-size:14px}
+.song b{display:block;font-size:15px}
+.song .dots i{width:11px;height:11px}
+.song .dots i.new{background:var(--coral)}
+.rules{text-align:left;padding-left:20px;margin:0 0 6px;color:var(--ink)}
+.rules li{margin:5px 0}
+.petal{position:fixed;top:-20px;width:14px;height:20px;border-radius:50% 50% 50% 0;z-index:25;pointer-events:none;animation:fall linear forwards}
+/* spelers en wezentjes */
+.hr{display:flex;align-items:center;gap:8px}
+.who{border:0;background:var(--card);border-radius:50%;width:48px;height:48px;padding:3px;cursor:pointer;box-shadow:0 4px 14px rgba(30,80,60,.12);flex:none}
+.who svg{width:100%;height:100%;display:block}
+.wz{overflow:visible}
+.wz.bob{animation:bob 2.6s ease-in-out infinite;transform-origin:50% 90%}
+.wz.cheer{animation:cheer .9s ease 3;transform-origin:50% 90%}
+.wz.dance{animation:cheer .45s ease;transform-origin:50% 90%}
+.wz-lampje .glow{animation:glow 2.4s ease-in-out infinite}
+.who-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;margin:12px 0 4px}
+.pc{position:relative;border:0;background:light-dark(#f3faf6,#24443c);color:var(--ink);border-radius:20px;padding:10px 6px 8px;cursor:pointer;font:800 15px Nunito,sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:130px}
+.pc svg{width:74px;height:74px}
+.pc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.pc small{font-weight:700;color:var(--soft);font-size:12px}
+.pc .lock{position:absolute;top:8px;right:10px;font-size:13px}
+.pc .ed{position:absolute;top:6px;left:6px;width:30px;height:30px;border-radius:50%;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.pc.add{border:3px dashed light-dark(#bfe0cf,#2e5a4f);background:none;color:var(--soft);justify-content:center}
+.cr-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:8px 0 4px}
+.cr{border:0;background:light-dark(#f3faf6,#24443c);border-radius:16px;padding:3px;cursor:pointer;aspect-ratio:1}
+.cr svg{width:100%;height:100%;display:block}
+.cr.on{outline:3px solid var(--coral);background:light-dark(#fff1ee,#3a2e2c)}
+.crd{font-size:14px;color:var(--soft);min-height:2.8em;margin:2px 0 6px}
+.crd b{color:var(--ink)}
+.field{display:block;text-align:left;font-weight:800;font-size:14px;margin:10px 0 5px;color:var(--ink)}
+.inp{width:100%;border:2px solid light-dark(#d4e8dd,#2e5a4f);background:var(--card);color:var(--ink);border-radius:14px;padding:10px 12px;font:700 17px Nunito,sans-serif}
+.inp:focus{outline:none;border-color:var(--leaf)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg .chip{flex:1;background:light-dark(#f3faf6,#24443c);box-shadow:none}
+.seg .chip.on{background:var(--leaf);color:#fff}
+.btn.warn{background:light-dark(#ffe3df,#4a2a26);color:light-dark(#c0392b,#ffb3a8)}
+.btn.small{min-height:42px}
+.btn[hidden],.link[hidden]{display:none}
+.mini svg{width:72px;height:72px}
+.pins{display:flex;justify-content:center;gap:14px;margin:14px 0}
+.pins i{width:18px;height:18px;border-radius:50%;border:3px solid var(--leaf)}
+.pins i.on{background:var(--leaf)}
+.pins.shake{animation:shake .4s}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:270px;margin:0 auto}
+.keys button{border:0;background:light-dark(#f3faf6,#24443c);color:var(--ink);font:800 24px Nunito,sans-serif;border-radius:18px;min-height:56px;cursor:pointer}
+.keys button:active{transform:scale(.96)}
+.keys button:disabled{visibility:hidden}
+.link{border:0;background:none;color:var(--soft);font:700 14px Nunito,sans-serif;text-decoration:underline;cursor:pointer;margin-top:10px;padding:6px}
+#ovWho{z-index:22}#ovNew{z-index:24}#ovPin{z-index:26}#ovAsk{z-index:28}
+#ovWho .card,#ovNew .card{max-width:470px}
+.gwrap{position:relative}
+.gcr{position:absolute;width:calc(100% / 6);aspect-ratio:1;cursor:pointer;transition:left 1.4s ease,top 1.4s ease;z-index:2}
+.gcr svg{width:100%;height:100%;display:block}
+.bubble{position:absolute;bottom:96%;left:50%;transform:translateX(-50%);background:var(--card);color:var(--ink);border-radius:14px;padding:6px 10px;font:700 13px/1.3 Nunito,sans-serif;width:max-content;max-width:170px;box-shadow:0 4px 14px rgba(0,0,0,.2);text-align:center;pointer-events:none;animation:rise .3s}
+.bubble.wide{max-width:min(250px,70vw);text-align:left;font-weight:600}
+.bubble.down{bottom:auto;top:96%}
+.bubble .tl,.talk .tl{display:block;font:800 11px Nunito,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--coral);margin-bottom:2px}
+.bubble .ta,.talk .ta{display:block;margin-top:6px;font-weight:800;color:var(--leaf)}
+.bubble .th{display:block;margin-top:5px;font-size:11px;color:var(--soft)}
+.talk{background:light-dark(#fff6ea,#2a3a30);border-radius:16px;padding:10px 12px;margin-top:8px;text-align:left;font-size:14px;color:var(--ink)}
+.talk[hidden]{display:none}
+.talk .btn{margin-top:8px;width:100%}
+.bubble.l{left:0;transform:none}.bubble.r{left:auto;right:0;transform:none}
+:root[data-night]{color-scheme:dark}
+.amb-firefly{width:6px;height:6px;background:#ffe066;border-radius:50%;box-shadow:0 0 10px 4px rgba(255,224,102,.55);top:auto;bottom:-20px}
+.cell.sp-stone,.cell.sp-pond{background:transparent;box-shadow:none}
+.cell.sp-ice{background:linear-gradient(135deg,#bfe6ff,#6fb6e8);box-shadow:inset 0 -4px 0 rgba(40,100,160,.3)}
+.cell .spx{width:96%;height:96%}
+.cell .pile{position:absolute;inset:6%;width:88%;height:88%}
+.rp{width:96px;height:96px;margin:0 auto 6px;border-radius:22px;background:var(--soil);display:flex;align-items:center;justify-content:center;position:relative}
+.rp svg{width:84px;height:84px}.rp .pile{position:absolute;inset:6px;width:84px;height:84px}
+.rp.sp-ice{background:linear-gradient(135deg,#bfe6ff,#6fb6e8)}.rp.night{background:#25305a}
+.icepic{display:flex;width:100%;height:100%;align-items:center;justify-content:center;border-radius:inherit;background:linear-gradient(135deg,#bfe6ff,#6fb6e8)}
+.chap .ic .spx,.chap .ic .pile{width:30px;height:30px}.chap .ic .pile{position:absolute}.chap .ic{position:relative}
+.chap.special{background:light-dark(#fffaf0,#24392f);box-shadow:0 0 0 2px light-dark(#ffe3b0,#4a4a2a),0 3px 10px rgba(30,80,60,.1)}
+.chap.nightc{background:#1f2850;color:#e6f0ff;box-shadow:0 0 0 2px #3a4a8a}.chap.nightc .ic{background:#2c3a66}
+.herbh{grid-column:1/-1;font:700 21px Fredoka,sans-serif;margin:14px 0 0}
+@keyframes blink{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes bob{50%{transform:translateY(-4%) scale(1.02,.98)}}
+@keyframes cheer{30%{transform:translateY(-14%) rotate(-6deg)}60%{transform:translateY(0) rotate(4deg)}}
+@keyframes glow{50%{opacity:.1}}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes pulse{0%,100%{transform:scale(.85);opacity:.45}50%{transform:scale(1);opacity:.9}}
+@keyframes bloom{0%{transform:scale(0) rotate(-90deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes sing{50%{transform:scale(1.25) rotate(18deg)}}
+@keyframes hop{50%{transform:scale(1.28) translateY(-6px)}}
+@keyframes morph{0%{transform:rotateY(0)}50%{transform:rotateY(90deg) scale(1.2)}100%{transform:rotateY(0)}}
+@keyframes nudge{0%,100%{transform:none}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@keyframes rise{from{transform:translateY(30px);opacity:0}}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
+@keyframes drift{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
+@keyframes rise2{to{transform:translate(var(--dx),-110vh)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}#amb{display:none}}
+</style>
+</head>
+<body>
+<div id="amb"></div>
+<div class="app">
+  <header>
+    <h1>Bloei<span>sprong</span></h1>
+    <div class="hr"><div class="seeds" title="Zaadjes"><span id="seedIc"></span><span id="seedN">0</span></div><button class="who" id="bWho" aria-label="Speler wisselen"></button></div>
+  </header>
+  <nav>
+    <button data-v="spel" class="on">Spel</button><button data-v="kaart">Kaart</button><button data-v="herb">Herbarium</button><button data-v="thuis">Thuistuin</button>
+  </nav>
+
+  <section class="view" id="v-spel">
+    <div class="bar">
+      <div class="lvl"><button class="round" id="bPrev" aria-label="Vorige tuin">‹</button><div><span id="sub">Tuin 1</span><small id="sub2"></small></div><button class="round" id="bNextL" aria-label="Volgende tuin">›</button></div>
+      <button class="chip" id="bDag">Dagtuin</button>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="tools">
+      <button id="bUndo"><b>↶</b>Terug</button>
+      <button id="bHint"><b>✿</b>Tip</button>
+      <button id="bReset"><b>↻</b>Opnieuw</button>
+      <button id="bSound"><b id="sIcon">♪</b><span id="sTxt">Geluid aan</span></button>
+    </div>
+    <div class="progress"><span id="count">0/0</span><div class="vine"><i id="vine"></i></div><span id="pieceName">paard</span></div>
+    <p class="foot" id="foot"></p>
+  </section>
+
+  <section class="view" id="v-kaart" hidden>
+    <h2 class="t">Seizoenskaart</h2>
+    <p class="muted">Elk landschap heeft een eigen lied. Elke tuin die je laat bloeien, voegt er een stukje aan toe.</p>
+    <div id="kaart"></div>
+  </section>
+
+  <section class="view" id="v-herb" hidden>
+    <h2 class="t">Herbarium</h2>
+    <p class="muted" id="herbN"></p>
+    <div class="herb" id="herb"></div>
+  </section>
+
+  <section class="view" id="v-thuis" hidden>
+    <div class="bar"><h2 class="t">Je thuistuin</h2><div id="gseas" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"></div></div>
+    <p class="muted">Kies iets onderaan en tik op een plek. Met het schopje haal je iets weg en krijg je je zaadjes terug.</p>
+    <div class="gwrap"><div class="garden" id="garden"></div><div class="gcr" id="gcr" hidden></div></div>
+    <div class="pal" id="pal"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<div class="ov" id="ovHelp"><div class="card">
+  <h2>Welkom in de tuin</h2>
+  <ul class="rules">
+    <li>Je steen springt zoals een <b>schaakstuk</b>. Laat <b>elke knop één keer</b> bloeien.</li>
+    <li>Toren, loper en dame glijden over gras en bloemen, maar <b>stoppen bij de eerste knop</b>.</li>
+    <li>Op een knop met een <b>stukje</b> erop verander je van stuk.</li>
+    <li>Elke tuin voegt een <b>stukje toe aan het lied</b> van het landschap, geeft <b>zaadjes</b> voor je thuistuin en af en toe een <b>nieuwe bloem</b>.</li>
+    <li>Na 25 tuinen in een seizoen opent een <b>wondertuin</b> met een nieuwe spelregel. Na de winter wacht de <b>nachttuin</b>.</li>
+    <li>Vast? Gewoon terug. Er is geen klok.</li>
+  </ul>
+  <div class="row"><button class="btn go" id="bStart">Begin te tuinieren</button></div>
+</div></div>
+<div class="ov" id="ovWin"><div class="card">
+  <div class="mini" id="winCr"></div>
+  <h2 id="winT">Tuin in bloei!</h2>
+  <p id="winP">Luister: je route werd een melodie.</p>
+  <div class="rew" id="winRew"></div>
+  <div id="winSp"></div>
+  <div id="winSong"></div>
+  <div class="talk" id="winTalk" hidden></div>
+  <div class="row"><button class="btn" id="bReplay">♪ Lied</button><button class="btn go" id="bNext">Volgende tuin →</button></div>
+</div></div>
+<div class="ov" id="ovRule"><div class="card">
+  <div id="rulePic"></div>
+  <h2 id="ruleT"></h2>
+  <p id="ruleP"></p>
+  <div class="row"><button class="btn go" id="bRule">Ik snap het</button></div>
+</div></div>
+<div class="ov" id="ovWho"><div class="card">
+  <h2>Wie speelt er?</h2>
+  <p id="whoP"></p>
+  <div class="who-grid" id="whoGrid"></div>
+  <div class="row"><button class="btn small" id="bManage">Beheren</button><button class="btn small go" id="bWhoClose">Verder spelen</button></div>
+</div></div>
+<div class="ov" id="ovNew"><div class="card">
+  <h2 id="newT">Nieuwe speler</h2>
+  <p>Kies een wezentje.</p>
+  <div class="cr-grid" id="crGrid"></div>
+  <p class="crd" id="crD"></p>
+  <label class="field" for="nmIn">Naam</label>
+  <input class="inp" id="nmIn" maxlength="14" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+  <span class="field">Pincode <span style="font-weight:700;color:var(--soft)">(niet verplicht)</span></span>
+  <div class="seg" id="pinSeg"></div>
+  <span class="field">Thema</span>
+  <div class="seg" id="thSeg"></div>
+  <div class="row"><button class="btn" id="bNewCancel">Annuleren</button><button class="btn go" id="bNewOk">Klaar</button></div>
+  <button class="btn warn small" id="bDel" style="width:100%;margin-top:10px">Speler wissen</button>
+</div></div>
+<div class="ov" id="ovPin"><div class="card">
+  <div class="mini" id="pinCr"></div>
+  <h2 id="pinT">Pincode</h2>
+  <p id="pinP"></p>
+  <div class="pins" id="pins"></div>
+  <div class="keys" id="keys"></div>
+  <button class="link" id="bForgot">Pincode vergeten?</button>
+  <div class="row"><button class="btn small" id="bPinCancel">Annuleren</button></div>
+</div></div>
+<div class="ov" id="ovAsk"><div class="card">
+  <div class="mini" id="askCr"></div>
+  <h2 id="askT"></h2>
+  <p id="askP"></p>
+  <div class="row"><button class="btn" id="bAskNo">Nee, toch niet</button><button class="btn warn" id="bAskYes">Ja, wissen</button></div>
+</div></div>
+<script>
+{
+// LOGIC START
+const PIECES={N:{g:'♞',n:'paard'},B:{g:'♝',n:'loper'},R:{g:'♜',n:'toren'},Q:{g:'♛',n:'dame'},K:{g:'♚',n:'koning'}};
+const KN=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+const KG=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const DIRS={R:KG.slice(0,4),B:KG.slice(4),Q:KG};
+const MAXL=200;
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const DIFF=L=>{const s=Math.floor((L-1)/50),p=(L-1)%50;return Math.round(1+s*4+p*.55)};
+function legal(lv,cur,p,vis){
+  const n=lv.n,r=Math.floor(cur/n),c=cur%n,out=[],inb=(a,b)=>a>=0&&a<n&&b>=0&&b<n;
+  if(p==='N'||p==='K'){for(const[a,b]of(p==='N'?KN:KG)){const rr=r+a,cc=c+b;if(inb(rr,cc)){const i=rr*n+cc;if(lv.land[i]&&!vis[i])out.push(i)}}}
+  else for(const[a,b]of DIRS[p]){let rr=r+a,cc=c+b;while(inb(rr,cc)){const i=rr*n+cc;if(lv.land[i]&&!vis[i]){out.push(i);break}rr+=a;cc+=b}}
+  return out;
+}
+function raw(n,cur,p,used){
+  const r=Math.floor(cur/n),c=cur%n,out=[],inb=(a,b)=>a>=0&&a<n&&b>=0&&b<n;
+  if(p==='N'||p==='K'){for(const[a,b]of(p==='N'?KN:KG))if(inb(r+a,c+b))out.push((r+a)*n+c+b)}
+  else for(const[a,b]of DIRS[p]){let rr=r+a,cc=c+b;while(inb(rr,cc)){out.push(rr*n+cc);rr+=a;cc+=b}}
+  return out.filter(i=>!used.has(i));
+}
+function generate(seed,diff){
+  const R=rng(seed),n=diff<3?5:diff<9?6:diff<24?7:8;
+  let L=Math.min(Math.floor(n*n*(n>7?.5:.55)),7+Math.floor(diff*1.1));
+  const nT=diff<4?0:Math.min(3,1+Math.floor((diff-4)/4));
+  for(let att=0;att<6000;att++){
+    if(att&&att%1500===0)L--;
+    const start=Math.floor(R()*n*n);
+    const p0=diff<4?'N':['N','N','K','B','R'][Math.floor(R()*5)];
+    const steps=new Set();while(steps.size<nT)steps.add(2+Math.floor(R()*(L-3)));
+    const path=[start],used=new Set([start]),trans={};let cur=start,p=p0,ok=true;
+    for(let s=1;s<L;s++){
+      let cand=raw(n,cur,p,used);if(!cand.length){ok=false;break}
+      if(R()<.6){const sc=cand.map(i=>raw(n,i,p,used).length);const m=Math.min(...sc);cand=cand.filter((_,k)=>sc[k]===m)}
+      const nx=cand[Math.floor(R()*cand.length)];path.push(nx);used.add(nx);cur=nx;
+      if(steps.has(s)){const opts=['N','B','R','K','Q'].filter(x=>x!==p&&!(x==='Q'&&diff<10));p=opts[Math.floor(R()*opts.length)];trans[nx]=p}
+    }
+    if(!ok)continue;
+    const lv={n,land:Array(n*n).fill(false),start,trans,sol:path,p0};
+    path.forEach(i=>lv.land[i]=true);
+    const vis=Array(n*n).fill(false);vis[start]=true;let q=p0,c2=start,good=true;
+    for(let k=1;k<path.length;k++){if(!legal(lv,c2,q,vis).includes(path[k])){good=false;break}c2=path[k];vis[c2]=true;q=trans[c2]||q}
+    if(!good)continue;
+    if(legal(lv,start,p0,Object.assign(Array(n*n).fill(false),{[start]:true})).length<2&&att<5000)continue;
+    lv.grass=Array.from({length:n*n},()=>R()<.38?Math.floor(R()*5):-1);
+    return lv;
+  }
+  return null;
+}
+function solve(lv,cur,p,vis0,rem,limit){
+  const vis=vis0.slice(),path=[];let nodes=0;
+  function dfs(c,q,r){
+    if(r===0)return true;
+    if(++nodes>limit)throw 0;
+    const mv=legal(lv,c,q,vis);
+    const sc=mv.map(m=>{vis[m]=true;const k=legal(lv,m,lv.trans[m]||q,vis).length;vis[m]=false;return k});
+    const ord=mv.map((m,i)=>[sc[i],m]).sort((a,b)=>a[0]-b[0]);
+    for(const[,m]of ord){vis[m]=true;path.push(m);if(dfs(m,lv.trans[m]||q,r-1))return true;path.pop();vis[m]=false}
+    return false;
+  }
+  try{return dfs(cur,p,rem)?path:null}catch(e){return undefined}
+}
+// LOGIC END
+// WONDER LOGIC START
+// Tuinwonderen. Soorten vakjes: 0 gras, 1 knop, 2 stapsteen, 3 vijver, 4 ijs.
+// Een bladerhoop is een knop die twee keer bezocht moet worden (lv.leaf[i]).
+// Voor tuinen zonder wonderen geven wmoves en legal precies dezelfde zetten.
+const kindOf=(lv,i)=>lv.land[i]?1:lv.stone&&lv.stone[i]?2:lv.pond&&lv.pond[i]>=0?3:lv.ice&&lv.ice[i]?4:0;
+const needOf=(lv,i)=>lv.leaf&&lv.leaf[i]?2:1;
+const isOpen=(lv,i,cnt)=>{const k=kindOf(lv,i);return k===1?cnt[i]<needOf(lv,i):k>1};
+const dirOf=(a,b)=>Math.abs(a)===2&&Math.abs(b)===1?[Math.sign(a),0]:Math.abs(a)===1&&Math.abs(b)===2?[0,Math.sign(b)]:[Math.sign(a),Math.sign(b)];
+function resolveW(lv,i,d,cnt){
+  const n=lv.n;let k=kindOf(lv,i);
+  if(k===4){let r=Math.floor(i/n),c=i%n;
+    for(;;){r+=d[0];c+=d[1];if(r<0||r>=n||c<0||c>=n)return -1;const j=r*n+c,kj=kindOf(lv,j);if(kj===4)continue;if(!isOpen(lv,j,cnt))return -1;i=j;k=kj;break}}
+  return k===3?lv.pond[i]:i;
+}
+function wmoves(lv,cur,p,cnt){
+  const n=lv.n,r=Math.floor(cur/n),c=cur%n,out=[],inb=(a,b)=>a>=0&&a<n&&b>=0&&b<n;
+  const add=(i,a,b)=>{const to=resolveW(lv,i,dirOf(a,b),cnt);if(to>=0&&to!==cur)out.push({at:i,to})};
+  if(p==='N'||p==='K'){for(const[a,b]of(p==='N'?KN:KG)){const rr=r+a,cc=c+b;if(inb(rr,cc)){const i=rr*n+cc;if(isOpen(lv,i,cnt))add(i,a,b)}}}
+  else for(const[a,b]of DIRS[p]){let rr=r+a,cc=c+b;while(inb(rr,cc)){const i=rr*n+cc;if(isOpen(lv,i,cnt)){add(i,a,b);break}rr+=a;cc+=b}}
+  return out;
+}
+// zet uitvoeren: geeft {bud, p} terug (bud = knop die een bezoek kreeg, of -1)
+function wstep(lv,cnt,to,p){if(kindOf(lv,to)!==1)return{bud:-1,p};cnt[to]++;return{bud:to,p:cnt[to]>=needOf(lv,to)&&lv.trans[to]?lv.trans[to]:p}}
+const wleft=(lv,cnt)=>{let k=0;for(let i=0;i<lv.land.length;i++)if(lv.land[i])k+=Math.max(0,needOf(lv,i)-cnt[i]);return k};
+function wsolve(lv,cur,p,cnt0,limit){
+  const cnt=cnt0.slice(),N=cnt.length,path=[],dead=new Set(),onp=new Set();let nodes=0;
+  if(!lv._z){const R=rng(4242+N);lv._z=Array.from({length:N*3+5},()=>[Math.floor(R()*2097152),Math.floor(R()*4294967296)])}
+  const Z=lv._z,PI={N:0,B:1,R:2,Q:3,K:4};
+  const key=(c,q)=>{let a=Z[N*3+PI[q]][0]^Z[c][0],b=(Z[N*3+PI[q]][1]^Z[c][1])>>>0;
+    for(let i=0;i<N;i++)if(cnt[i]){const z=Z[N+(Math.min(cnt[i],2)-1)*N+i];a^=z[0];b=(b^z[1])>>>0}return a*4294967296+b};
+  let left=wleft(lv,cnt);
+  function dfs(c,q){
+    if(left===0)return true;
+    if(++nodes>limit)throw 0;
+    const k=key(c,q);if(dead.has(k)||onp.has(k))return false;onp.add(k);
+    const mv=wmoves(lv,c,q,cnt).map(m=>{const prog=kindOf(lv,m.to)===1?1:0;let s=0;
+      if(prog){cnt[m.to]++;s=wmoves(lv,m.to,cnt[m.to]>=needOf(lv,m.to)&&lv.trans[m.to]||q,cnt).length;cnt[m.to]--}else s=9;
+      return[prog?s:100+s,m]}).sort((x,y)=>x[0]-y[0]);
+    for(const[,m]of mv){const st=wstep(lv,cnt,m.to,q);if(st.bud>=0)left--;path.push(m);
+      if(dfs(m.to,st.p))return true;
+      path.pop();if(st.bud>=0){cnt[st.bud]--;left++}}
+    onp.delete(k);dead.add(k);return false;
+  }
+  try{return dfs(cur,p)?path:null}catch(e){return undefined}
+}
+// generator voor wondertuinen: bouwt een route met de gevraagde wonderen en controleert die met de echte regels
+function generateW(seed,diff,kinds){
+  const R=rng(seed),n=diff<6?5:diff<12?6:diff<24?7:8,has=k=>kinds.includes(k);
+  let L=Math.min(Math.floor(n*n*(n>7?.45:.5)),6+Math.floor(diff*1.0));
+  const nT=diff<6?0:Math.min(2,1+Math.floor((diff-6)/8));
+  const pairsWanted=has('pond')?(diff<14?1:2):0;
+  for(let att=0;att<20000;att++){
+    if(att&&att%4000===0)L--;
+    const start=Math.floor(R()*n*n);
+    const pool=has('ice')?['K','R','K','N','Q']:has('stone')?['R','B','N','K','R']:['N','K','N','B','R'];
+    const p0=pool[Math.floor(R()*pool.length)];
+    const T=Array(n*n).fill(0),cnt=Array(n*n).fill(0),pond=Array(n*n).fill(-1);T[start]=1;cnt[start]=1;
+    const moves=[],trans={};let cur=start,p=p0,buds=1,ok=true,pairs=0,leafs=0,stoneUse=0,pondUse=0,iceUse=0,lastSpecial=false;
+    const steps=new Set();while(steps.size<nT)steps.add(3+Math.floor(R()*Math.max(1,L-4)));
+    const inb=(a,b)=>a>=0&&a<n&&b>=0&&b<n;
+    for(let guard=0;buds<L&&guard<L*3;guard++){
+      const r=Math.floor(cur/n),c=cur%n,cand=[];
+      const consider=(i,a,b)=>{
+        const t=T[i];
+        if(t===0){
+          cand.push({i,w:4,act:'bud'});
+          if(has('stone')&&!lastSpecial)cand.push({i,w:1.1,act:'stone'});
+          if(has('pond')&&pairs<pairsWanted&&!lastSpecial)cand.push({i,w:1.4,act:'pond'});
+          if(has('ice')&&!lastSpecial){const d=dirOf(a,b),rr=Math.floor(i/n)+d[0],cc=i%n+d[1];if(inb(rr,cc)){const j=rr*n+cc;if(T[j]===0||T[j]===2)cand.push({i,w:1.6,act:'ice',j})}}
+        }else if(t===2&&!lastSpecial)cand.push({i,w:2.2,act:'stone2'});
+        else if(t===3&&!lastSpecial)cand.push({i,w:2.2,act:'pond2'});
+        else if(t===4&&!lastSpecial){const d=dirOf(a,b);let rr=Math.floor(i/n),cc=i%n,j=-1;for(;;){rr+=d[0];cc+=d[1];if(!inb(rr,cc))break;const q=rr*n+cc;if(T[q]===4)continue;if(T[q]===0||T[q]===2)j=q;break}if(j>=0)cand.push({i,w:2.4,act:'ice2',j})}
+        else if(t===1&&has('leaf')&&cnt[i]===1&&i!==start&&!trans[i]&&leafs<Math.max(2,Math.floor(L/5))&&moves.length>2)cand.push({i,w:1.6,act:'leaf'});
+      };
+      if(p==='N'||p==='K'){for(const[a,b]of(p==='N'?KN:KG))if(inb(r+a,c+b))consider((r+a)*n+c+b,a,b)}
+      else for(const[a,b]of DIRS[p]){let rr=r+a,cc=c+b;while(inb(rr,cc)){consider(rr*n+cc,a,b);rr+=a;cc+=b}}
+      if(!cand.length){ok=false;break}
+      let tot=cand.reduce((s,x)=>s+x.w,0),x=R()*tot,ch=cand[0];for(const y of cand){x-=y.w;if(x<=0){ch=y;break}}
+      const i=ch.i;let to=i;lastSpecial=false;
+      if(ch.act==='bud'){T[i]=1;cnt[i]=1;buds++}
+      else if(ch.act==='leaf'){cnt[i]=2;leafs++;buds++}
+      else if(ch.act==='stone'){T[i]=2;stoneUse++;lastSpecial=true}
+      else if(ch.act==='stone2'){stoneUse++;lastSpecial=true}
+      else if(ch.act==='pond'){const fr=[];for(let q=0;q<n*n;q++)if(T[q]===0&&q!==i&&Math.abs(q%n-i%n)+Math.abs(Math.floor(q/n)-Math.floor(i/n))>=3)fr.push(q);
+        if(!fr.length){ok=false;break}const j=fr[Math.floor(R()*fr.length)];T[i]=3;T[j]=3;pond[i]=j;pond[j]=i;pairs++;pondUse++;to=j;lastSpecial=true}
+      else if(ch.act==='pond2'){to=pond[i];pondUse++;lastSpecial=true}
+      else if(ch.act==='ice'||ch.act==='ice2'){if(T[i]===0)T[i]=4;iceUse++;to=ch.j;if(T[to]===0){T[to]=1;cnt[to]=1;buds++}else{stoneUse++}}
+      if(to===cur){ok=false;break}
+      moves.push({at:i,to});cur=to;
+      if(T[to]===1&&cnt[to]>=1&&steps.has(moves.length)&&ch.act!=='leaf'&&!trans[to]){const opts=['N','B','R','K','Q'].filter(x=>x!==p&&!(x==='Q'&&diff<10));p=opts[Math.floor(R()*opts.length)];trans[to]=p}
+    }
+    if(!ok||buds<Math.min(L,5))continue;
+    if(has('stone')&&(T.filter(t=>t===2).length<2||stoneUse<3))continue;
+    if(has('pond')&&(pairs<pairsWanted||pondUse<pairs+1))continue;
+    if(has('leaf')&&leafs<2)continue;
+    if(has('ice')&&iceUse<2)continue;
+    const lv={n,land:T.map(t=>t===1),start,trans,p0,stone:T.map(t=>t===2),pond,ice:T.map(t=>t===4),leaf:cnt.map(v=>v===2),kinds};
+    // trans alleen op gewone knoppen
+    let good=true;
+    const vc=Array(n*n).fill(0);vc[start]=1;let q=p0,c2=start;
+    for(const m of moves){const mv=wmoves(lv,c2,q,vc);if(!mv.some(x=>x.at===m.at&&x.to===m.to)){good=false;break}const st=wstep(lv,vc,m.to,q);q=st.p;c2=m.to}
+    if(!good||wleft(lv,vc)!==0)continue;
+    const vs=Array(n*n).fill(0);vs[start]=1;
+    if(wmoves(lv,start,p0,vs).length<2&&att<15000)continue;
+    lv.solM=moves;lv.sol=[start].concat(moves.map(m=>m.to));
+    lv.grass=Array.from({length:n*n},()=>R()<.38?Math.floor(R()*5):-1);
+    return lv;
+  }
+  return null;
+}
+// WONDER LOGIC END
+
+// ---------- wereld ----------
+const SEASONS=[
+ {n:'Lente',bg:'light-dark(#e3f7ea,#10302a)',bg2:'light-dark(#fdeef4,#2a1f30)',board:'light-dark(#c4ead2,#1d4a40)',soil:'light-dark(#f6e6d2,#3b3a2f)',soil2:'light-dark(#fff7ec,#4a4836)',g:['#a6df95','#9ad688'],part:'blossom',deco:'bloesem',inst:'marimba',petals:['#ffc7d9','#ffb3c7','#fff','#c8f0d0']},
+ {n:'Zomer',bg:'light-dark(#fff3cc,#2a2a14)',bg2:'light-dark(#dcf0ff,#12283a)',board:'light-dark(#c4e5a6,#2a4a22)',soil:'light-dark(#f7e4c8,#3e3a28)',soil2:'light-dark(#fff8e8,#4e4a34)',g:['#93d36f','#87c964'],part:'pollen',deco:'vlinder',inst:'kalimba',petals:['#ffd84d','#ff8fa3','#7fdbda','#ffb38a']},
+ {n:'Herfst',bg:'light-dark(#fde8d2,#2e2116)',bg2:'light-dark(#f2dfc4,#261c14)',board:'light-dark(#ecd5a8,#4a3a22)',soil:'light-dark(#f8e5cc,#3d3226)',soil2:'light-dark(#fff5e8,#4d4030)',g:['#d8b66c','#cdaa5e'],part:'leaf',deco:'blad',inst:'epiano',petals:['#e8873a','#d9541e','#f2c14e','#b5523b']},
+ {n:'Winter',bg:'light-dark(#eef6fc,#0f1c2c)',bg2:'light-dark(#e0e9f6,#18223a)',board:'light-dark(#d6e6f3,#22344a)',soil:'light-dark(#ffffff,#3a4658)',soil2:'light-dark(#eef6ff,#4a5870)',g:['#eaf2f8','#dfe9f2'],part:'snow',deco:'sneeuw',inst:'celesta',petals:['#ffffff','#dbeeff','#c8dcf5','#ffffff']},
+ {n:'Nacht',bg:'#141b3a',bg2:'#251a46',board:'#25305a',soil:'#3c4373',soil2:'#555c93',g:['#1f2b4a','#1a2542'],part:'firefly',deco:'sterretje',inst:'harp',petals:['#ffe066','#fff3b0','#cfe0ff','#b69cff']}];
+const LANDS=[
+ {n:'Weide',root:0,mode:[0,2,4,5,7,9,11],bpm:84,deco:['gras','madelief','steen']},
+ {n:'Boomgaard',root:5,mode:[0,2,4,5,7,9,10],bpm:88,deco:['appel','gras','takje']},
+ {n:'Bos',root:2,mode:[0,2,3,5,7,9,10],bpm:74,deco:['paddenstoel','varen','steen']},
+ {n:'Meer',root:7,mode:[0,2,4,6,7,9,11],bpm:78,deco:['lelieblad','golf','golf'],water:['rgba(120,190,235,.35)','rgba(120,190,235,.35)','rgba(110,170,210,.35)','rgba(200,228,250,.7)']},
+ {n:'Duinen',root:9,mode:[0,2,3,5,7,8,10],bpm:82,deco:['helm','schelp','zand'],board:'light-dark(#eedfb9,#4a4230)'},
+ {n:'Wondertuin',root:4,mode:[0,2,4,6,7,9,11],bpm:80,deco:['steen','madelief','gras']},
+ {n:'Nachttuin',root:10,mode:[0,2,3,5,7,9,10],bpm:68,deco:['sterretje','maan','gras']}];
+const DECO={
+ gras:'<path d="M5 18 Q6 10 4 6 M10 18 Q10 8 11 4 M15 18 Q14 11 16 7" stroke="#3fa877" stroke-width="2" fill="none" stroke-linecap="round"/>',
+ madelief:'<g fill="#fff">'+[0,60,120,180,240,300].map(a=>`<ellipse cx="10" cy="6" rx="2" ry="3.6" transform="rotate(${a} 10 10)"/>`).join('')+'</g><circle cx="10" cy="10" r="2.4" fill="#ffd23f"/>',
+ steen:'<ellipse cx="10" cy="13" rx="6" ry="3.5" fill="#a9b8b0"/><ellipse cx="9" cy="12" rx="3" ry="1.4" fill="#fff" opacity=".4"/>',
+ appel:'<circle cx="10" cy="12" r="5" fill="#e8453c"/><path d="M10 7 Q12 3 15 4 Q13 7 10 7Z" fill="#3fa877"/><circle cx="8" cy="10" r="1.3" fill="#fff" opacity=".6"/>',
+ takje:'<path d="M3 16 L17 6" stroke="#9a6b43" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="8" cy="10" rx="3" ry="1.5" fill="#5cc28c" transform="rotate(-50 8 10)"/><ellipse cx="13" cy="10" rx="3" ry="1.5" fill="#5cc28c" transform="rotate(20 13 10)"/>',
+ paddenstoel:'<rect x="8.5" y="10" width="3" height="7" rx="1.2" fill="#fff4e6"/><path d="M3 11 C3 3 17 3 17 11Z" fill="#e8453c"/><circle cx="7.5" cy="8" r="1.2" fill="#fff"/><circle cx="12" cy="6.5" r="1" fill="#fff"/>',
+ varen:'<path d="M4 18 Q8 10 16 4" stroke="#2f8f5b" stroke-width="1.6" fill="none"/>'+[0,1,2,3].map(k=>`<ellipse cx="${7+k*2.5}" cy="${13-k*2.6}" rx="2.6" ry="1.1" fill="#4caf6e" transform="rotate(-40 ${7+k*2.5} ${13-k*2.6})"/>`).join(''),
+ lelieblad:'<path d="M10 10 L17 8 A7 7 0 1 1 15 5Z" fill="#4caf6e"/><circle cx="7" cy="9" r="1.2" fill="#ffb3c7"/>',
+ golf:'<path d="M3 9 Q6 6 9 9 T15 9 M6 14 Q9 11 12 14 T18 14" stroke="#ffffff" stroke-width="1.6" fill="none" opacity=".8" stroke-linecap="round"/>',
+ helm:'<path d="M6 18 Q5 10 3 5 M10 18 Q11 9 10 3 M14 18 Q15 11 18 6" stroke="#b9a25a" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+ schelp:'<path d="M10 15 L4 9 Q10 2 16 9Z" fill="#ffc9b0"/><path d="M10 15 L8 6 M10 15 L10 5 M10 15 L12 6" stroke="#e8a283" stroke-width=".8"/>',
+ zand:'<circle cx="6" cy="9" r="1" fill="#c9a96a"/><circle cx="12" cy="13" r="1.2" fill="#c9a96a"/><circle cx="14" cy="7" r=".8" fill="#c9a96a"/>',
+ bloesem:'<g fill="#ffc7d9">'+[0,72,144,216,288].map(a=>`<circle cx="10" cy="7" r="2.6" transform="rotate(${a} 10 10)"/>`).join('')+'</g><circle cx="10" cy="10" r="1.6" fill="#ff7aa2"/>',
+ vlinder:'<ellipse cx="7" cy="8" rx="3.4" ry="2.6" fill="#ffb38a" transform="rotate(-25 7 8)"/><ellipse cx="13" cy="8" rx="3.4" ry="2.6" fill="#ffb38a" transform="rotate(25 13 8)"/><ellipse cx="7.5" cy="12" rx="2.2" ry="1.8" fill="#ffd84d"/><ellipse cx="12.5" cy="12" rx="2.2" ry="1.8" fill="#ffd84d"/><rect x="9.5" y="6" width="1" height="8" rx=".5" fill="#5a3a22"/>',
+ blad:'<path d="M4 15 C4 7 10 4 16 4 C16 10 12 16 4 15Z" fill="#e8873a"/><path d="M4 15 L13 7" stroke="#b5523b" stroke-width=".9"/>',
+ sneeuw:'<path d="M3 16 C4 11 8 10 10 12 C12 9 16 10 17 16Z" fill="#fff"/><path d="M13 3 V9 M10.4 4.5 L15.6 7.5 M10.4 7.5 L15.6 4.5" stroke="#a9cbe8" stroke-width="1" stroke-linecap="round"/>',
+ sterretje:'<path d="M10 3L11.8 8.2L17 8.4L12.9 11.6L14.3 16.8L10 13.8L5.7 16.8L7.1 11.6L3 8.4L8.2 8.2Z" fill="#ffe27a"/>',
+ maan:'<path d="M13 3A7.5 7.5 0 1 0 17 14A6 6 0 1 1 13 3Z" fill="#fff3b0"/><circle cx="7" cy="8" r="1" fill="#e8d98a"/>'};
+const decoSvg=k=>`<svg viewBox="0 0 20 20">${DECO[k]}</svg>`;
+
+// 40 bloemsoorten: naam, beschrijving, aantal blaadjes, vorm, kleur, binnenkleur, hart, groot hart
+const SPECIES=[
+ ['Madeliefje','Telt met jou mee: houdt van je, houdt niet van je.',16,'thin','#ffffff',0,'#ffd23f'],
+ ['Boterbloem','Glimt geel onder je kin: dan hou je van boter.',5,'round','#ffd84d',0,'#f2a81d'],
+ ['Vergeet-mij-nietje','Klein, blauw en vastbesloten om onthouden te worden.',5,'round','#8ec5ff',0,'#ffe066'],
+ ['Krokus','Steekt als een van de eersten zijn kop boven de grond.',0,'cup','#b38cff','#d7c2ff'],
+ ['Sneeuwklokje','Luidt de lente in, zonder één geluid te maken.',3,'point','#ffffff',0,'#8fd18f'],
+ ['Narcis','Met een trompetje in het midden, klaar voor feest.',6,'point','#fff3a6',0,'#ff9f1c',1],
+ ['Tulp','Kwam ooit van ver uit Centraal-Azië, nu half Hollands.',0,'cup','#ff6f91','#ff9fb5'],
+ ['Hyacint','Ruikt sterker dan je van zo een kleintje verwacht.',6,'point','#7c9cff','#a9bcff','#ffffff'],
+ ['Viooltje','Heeft een gezichtje, als je goed kijkt.',5,'heart','#8e6cff','#ffd84d','#ffffff'],
+ ['Magnolia','Bloeit al voor er bladeren aan de boom hangen.',6,'round','#fde2ea','#ffffff','#f7c6d3'],
+ ['Kersenbloesem','In Japan gaan ze er samen naar kijken: hanami.',5,'heart','#ffc7d9',0,'#ff7aa2'],
+ ['Anemoon','Ook windbloem genoemd: het minste briesje en ze knikt.',6,'round','#e63973',0,'#2e2a4a',1],
+ ['Akelei','Heeft kleine sporen, zoals een ridder.',5,'point','#6fa8ff','#ffffff','#ffe066'],
+ ['Klaproos','Kreukelig als zijdepapier, en toch trots.',4,'round','#ff5a4e','#ff8a7f','#2b2b2b'],
+ ['Korenbloem','Blauwer dan de lucht op een goede dag.',10,'point','#5b8def','#8fb3ff','#3b4fa8'],
+ ['Zonnebloem','Jonge zonnebloemen draaien mee met de zon.',14,'point','#ffc93c',0,'#7a4a1d',1],
+ ['Lavendel','Ruikt naar een zomer in de Provence.',8,'thin','#b69cff','#d8c8ff','#8a6bd8'],
+ ['Kamille','Wordt thee als hij groot is.',12,'thin','#ffffff',0,'#ffcf33',1],
+ ['Margriet','De grote zus van het madeliefje.',14,'thin','#ffffff',0,'#ffc61a'],
+ ['Roos','Doornen? Alleen voor wie niet goeiedag zegt.',5,'heart','#ff7aa2','#ff9fbe','#ffd1dc'],
+ ['Lotus','Groeit uit de modder en blijft toch proper.',8,'point','#ffb3c7','#ffd6e0','#ffe27a'],
+ ['Waterlelie','Drijft rustig op een bord van blad.',10,'point','#ffffff','#ffe3ec','#ffd23f'],
+ ['Hibiscus','Stuurt warme groeten uit de tropen.',5,'heart','#ff4f6d',0,'#ffd23f'],
+ ['Dahlia','Een bloem die stiekem wiskunde deed.',12,'point','#ff8c42','#ffb26b','#d9541e'],
+ ['Cosmea','Danst op elk zuchtje wind.',8,'round','#ff8fc8',0,'#ffd23f'],
+ ['Distel','Stekelig van buiten, zacht paars van binnen.',20,'thin','#b07cff','#d3b3ff','#6c4bb8'],
+ ['Pioen','Plooit open als een balletrokje.',8,'round','#ff9bb3','#ffc2d1','#ffe1e8'],
+ ['Fuchsia','Hangt ondersteboven als een danseresje.',4,'point','#ff4fa3','#8a4dff','#ff4fa3'],
+ ['Clematis','Klimt liever dan dat hij wandelt.',6,'point','#b18cff',0,'#fff3b0'],
+ ['Lupine','Een torentje vol kleine erwtenbloempjes.',9,'thin','#a27bff','#ffb3d9','#ffffff'],
+ ['Orchidee','De diva van de vensterbank.',5,'heart','#e07bff','#f5c2ff','#ffe066'],
+ ['Iris','Vernoemd naar de godin van de regenboog.',3,'heart','#7d5cff','#ffd84d','#ffffff'],
+ ['Gentiaan','Het diepste blauw van de bergen.',5,'point','#2f5bd6',0,'#ffffff'],
+ ['Kerstroos','Bloeit gewoon midden in de winter.',5,'round','#ffffff',0,'#ffd23f'],
+ ['Amaryllis','Een trompet vol feest.',6,'point','#e8364a',0,'#fff0a6'],
+ ['Kerstster','De rode blaadjes zijn eigenlijk geen bloemblaadjes.',6,'point','#e23b3b','#ff6b6b','#ffd23f'],
+ ['Edelweiss','Zilverwit en zacht als vilt.',8,'point','#f4f4ee','#ffffff','#e9d98a'],
+ ['IJsbloem','Groeit alleen op koude ramen.',6,'thin','#cfe8ff','#ffffff','#9cc9ff'],
+ ['Maanbloem','Gaat pas open als het donker wordt.',5,'round','#f3f0ff',0,'#d9e6ff',1],
+ ['Sterrenbloem','Nergens te vinden, behalve hier.',8,'point','#ffd84d','#fff3b0','#ff9f1c'],
+ ['Winterjasmijn','Bloeit geel in de kou, als een klein zonnetje.',6,'point','#ffd84d',0,'#f2a81d'],
+ ['Toverhazelaar','Krullende lintjes die naar honing ruiken, midden in de winter.',12,'thin','#ffb347','#ffd27a','#b5523b']];
+const SHAPE={ellipse:'<ellipse cx="0" cy="-23" rx="14" ry="23"/>',round:'<circle cx="0" cy="-21" r="17"/>',
+ point:'<path d="M0 -2C13 -14 10 -36 0 -47C-10 -36 -13 -14 0 -2Z"/>',
+ heart:'<path d="M0 -3C17 -14 19 -40 6 -44C2 -45 0 -41 0 -37C0 -41 -2 -45 -6 -44C-19 -40 -17 -14 0 -3Z"/>',
+ thin:'<ellipse cx="0" cy="-25" rx="6" ry="22"/>'};
+function flowerInner(si,rot=0){
+  const[, ,n,sh,c1,c2,ce,big]=SPECIES[si];
+  if(sh==='cup')return`<path d="M-26 -8C-28 -36 -14 -44 -6 -40L0 -22L6 -40C14 -44 28 -36 26 -8C22 22 -22 22 -26 -8Z" fill="${c1}"/><path d="M-12 -36C-6 -46 6 -46 12 -36C10 -16 -10 -16 -12 -36Z" fill="${c2}"/><path d="M-20 -6C-16 10 16 10 20 -6" stroke="#fff" stroke-width="3" opacity=".35" fill="none"/>`;
+  const ring=(col,sc,off)=>`<g fill="${col}" transform="rotate(${rot+off}) scale(${sc})">${Array.from({length:n},(_,j)=>`<g transform="rotate(${j*360/n})">${SHAPE[sh]}</g>`).join('')}</g>`;
+  return ring(c1,1,0)+(c2?ring(c2,.6,180/n):'')+`<circle r="${big?18:12}" fill="${ce}"/><circle r="${big?6:4}" cx="-4" cy="-4" fill="#fff" opacity=".45"/>`;
+}
+const flowerSvg=(si,cls='flower',rot=0)=>`<svg class="${cls}" viewBox="-50 -50 100 100">${flowerInner(si,rot)}</svg>`;
+const SEED='<svg viewBox="0 0 20 20"><path d="M10 2C15 7 16 12 13 16C11 18 9 18 7 16C4 12 5 7 10 2Z" fill="#b57a45"/><path d="M10 5C11 9 11 12 9 15" stroke="#e0b07a" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+
+// thuistuin-voorwerpen
+const SH='<ellipse cx="0" cy="38" rx="30" ry="7" fill="rgba(0,0,0,.12)"/>';
+const ITEMS=[
+ {k:'pad',n:'Stapstenen',c:1,at:0,s:'<ellipse cx="-18" cy="22" rx="16" ry="10" fill="#c9cfd2"/><ellipse cx="14" cy="0" rx="15" ry="9" fill="#d5dadc"/><ellipse cx="-6" cy="-26" rx="13" ry="8" fill="#c9cfd2"/>'},
+ {k:'struik',n:'Struik',c:2,at:0,s:SH+'<circle cx="-14" cy="10" r="20" fill="#3f9b5f"/><circle cx="14" cy="10" r="20" fill="#3f9b5f"/><circle cx="0" cy="-8" r="22" fill="#52b874"/><circle cx="-6" cy="-14" r="7" fill="#7fd69a" opacity=".7"/>'},
+ {k:'hek',n:'Hekje',c:1,at:4,s:'<rect x="-44" y="-4" width="88" height="7" fill="#efe4d2"/><rect x="-44" y="16" width="88" height="7" fill="#efe4d2"/>'+[-34,-17,0,17,34].map(x=>`<path d="M${x-6} 34V-14L${x} -24L${x+6} -14V34Z" fill="#fffaf2" stroke="#d9cbb5" stroke-width="2"/>`).join('')},
+ {k:'boom',n:'Boompje',c:3,at:8,s:SH+'<rect x="-6" y="0" width="12" height="36" rx="4" fill="#9a6b43"/><circle cx="0" cy="-14" r="28" fill="#4caf6e"/><circle cx="-10" cy="-24" r="9" fill="#7fd69a" opacity=".6"/>'},
+ {k:'vijver',n:'Vijver',c:4,at:12,s:'<ellipse cx="0" cy="6" rx="44" ry="32" fill="#7cc4ec"/><ellipse cx="-8" cy="0" rx="30" ry="18" fill="#a6dcf7"/><circle cx="18" cy="14" r="8" fill="#4caf6e"/><circle cx="-14" cy="-6" r="3" fill="#fff" opacity=".8"/>'},
+ {k:'paddo',n:'Paddenstoel',c:1,at:16,s:SH+'<rect x="-7" y="0" width="14" height="32" rx="5" fill="#fff4e6"/><path d="M-30 4C-30 -30 30 -30 30 4Z" fill="#e8453c"/><circle cx="-12" cy="-10" r="5" fill="#fff"/><circle cx="8" cy="-16" r="4" fill="#fff"/><circle cx="16" cy="-2" r="3" fill="#fff"/>'},
+ {k:'bank',n:'Bankje',c:3,at:20,s:SH+'<rect x="-38" y="-14" width="76" height="9" rx="3" fill="#b07a4a"/><rect x="-38" y="0" width="76" height="9" rx="3" fill="#c48b57"/><rect x="-30" y="9" width="6" height="26" fill="#7a5233"/><rect x="24" y="9" width="6" height="26" fill="#7a5233"/>'},
+ {k:'huisje',n:'Vogelhuisje',c:3,at:28,s:'<rect x="-4" y="0" width="8" height="40" fill="#8a5d3a"/><rect x="-17" y="-8" width="34" height="26" rx="3" fill="#f6c36b"/><path d="M-23 -6L0 -34L23 -6Z" fill="#e8705f"/><circle cx="0" cy="4" r="6" fill="#5a3a22"/>'},
+ {k:'lantaarn',n:'Lantaarn',c:2,at:36,s:'<ellipse cx="0" cy="40" rx="14" ry="4" fill="rgba(0,0,0,.12)"/><rect x="-3" y="-10" width="6" height="50" fill="#4a5560"/><circle cx="0" cy="-22" r="24" fill="#ffd166" opacity=".3"/><rect x="-10" y="-34" width="20" height="24" rx="4" fill="#ffe8a3" stroke="#4a5560" stroke-width="3"/><path d="M-13 -34L0 -44L13 -34Z" fill="#4a5560"/>'},
+ {k:'korf',n:'Bijenkorf',c:4,at:45,s:SH+'<path d="M-28 32C-34 -6 -18 -30 0 -30C18 -30 34 -6 28 32Z" fill="#f2c14e"/><path d="M-31 8H31M-27 -10H27M-31 22H31" stroke="#d9a53a" stroke-width="4"/><ellipse cx="0" cy="26" rx="6" ry="5" fill="#5a3a22"/><circle cx="26" cy="-28" r="4" fill="#ffd23f"/><ellipse cx="24" cy="-33" rx="4" ry="3" fill="#fff" opacity=".85"/>'},
+ {k:'egel',n:'Egel',c:5,at:55,s:SH+'<g stroke="#6b4a30" stroke-width="4" stroke-linecap="round"><path d="M-20 -4L-30 -16M-6 -12L-10 -26M8 -14L10 -28M20 -8L28 -20M-26 12L-38 6"/></g><path d="M-30 30C-34 -2 -14 -18 6 -16C22 -14 30 0 28 30Z" fill="#8a6446"/><path d="M24 30C26 16 34 14 42 22C40 30 30 32 24 30Z" fill="#e9c9a3"/><circle cx="42" cy="22" r="3" fill="#2b2b2b"/><circle cx="31" cy="20" r="2" fill="#2b2b2b"/>'},
+ {k:'appelboom',n:'Appelboom',c:5,at:70,s:SH+'<rect x="-6" y="0" width="12" height="36" rx="4" fill="#9a6b43"/><circle cx="0" cy="-14" r="30" fill="#4caf6e"/><g fill="#e8453c"><circle cx="-14" cy="-6" r="5"/><circle cx="10" cy="-22" r="5"/><circle cx="14" cy="0" r="5"/><circle cx="-4" cy="-32" r="5"/></g>'},
+ {k:'vogelbad',n:'Vogelbad',c:4,at:85,s:SH+'<rect x="-6" y="-4" width="12" height="36" fill="#b8c2c8"/><rect x="-16" y="30" width="32" height="8" rx="3" fill="#a3adb3"/><ellipse cx="0" cy="-8" rx="32" ry="10" fill="#b8c2c8"/><ellipse cx="0" cy="-10" rx="26" ry="6" fill="#8fd0f0"/><circle cx="16" cy="-22" r="7" fill="#6a8fd8"/><path d="M22 -23L29 -21L22 -19Z" fill="#f29e4c"/>'},
+ {k:'molen',n:'Windmolentje',c:6,at:100,s:SH+'<path d="M-12 36L-8 -10H8L12 36Z" fill="#f4ead8"/><rect x="-5" y="18" width="10" height="18" rx="5" fill="#9a6b43"/><g transform="translate(0 -14)"><g class="spin">'+[0,90,180,270].map(a=>`<g transform="rotate(${a})"><rect x="-2" y="-36" width="4" height="36" fill="#c48b57"/><rect x="2" y="-34" width="10" height="24" fill="#ffffff" stroke="#c48b57"/></g>`).join('')+'</g><circle r="4" fill="#7a5233"/></g>'},
+ {k:'fontein',n:'Fontein',c:8,at:125,s:SH+'<ellipse cx="0" cy="24" rx="38" ry="12" fill="#b8c2c8"/><ellipse cx="0" cy="22" rx="32" ry="8" fill="#8fd0f0"/><rect x="-5" y="-14" width="10" height="36" fill="#b8c2c8"/><ellipse cx="0" cy="-14" rx="16" ry="6" fill="#b8c2c8"/><path d="M0 -18C-4 -38 -16 -32 -20 -14M0 -18C4 -38 16 -32 20 -14M0 -18V-36" stroke="#8fd0f0" stroke-width="3" fill="none" stroke-linecap="round"/>'},
+ {k:'sneeuwpop',n:'Sneeuwpop',c:3,at:150,s:SH+'<circle cx="0" cy="16" r="21" fill="#fff" stroke="#dbe6ee" stroke-width="2"/><circle cx="0" cy="-16" r="14" fill="#fff" stroke="#dbe6ee" stroke-width="2"/><path d="M0 -15L15 -12L0 -11Z" fill="#f29e4c"/><circle cx="-5" cy="-20" r="2" fill="#2b2b2b"/><circle cx="4" cy="-20" r="2" fill="#2b2b2b"/><rect x="-13" y="-33" width="26" height="5" fill="#3b4a5a"/><rect x="-8" y="-46" width="16" height="14" fill="#3b4a5a"/><path d="M-13 -5H13" stroke="#e8453c" stroke-width="5" stroke-linecap="round"/>'},
+ {k:'schuur',n:'Tuinhuisje',c:10,at:175,s:SH+'<rect x="-30" y="-6" width="60" height="42" fill="#c97b5a"/><path d="M-38 -4L0 -36L38 -4Z" fill="#7a4a35"/><rect x="-10" y="12" width="20" height="24" fill="#8a5a40"/><rect x="14" y="2" width="12" height="10" fill="#bfe6ff"/><rect x="-26" y="2" width="12" height="10" fill="#bfe6ff"/>'}];
+const itemSvg=(k,cls='')=>{if(k[0]==='f'&&!isNaN(k.slice(1))){const si=+k.slice(1);return`<svg class="${cls}" viewBox="-50 -50 100 100">${SH}<path d="M0 40V4" stroke="#3fa877" stroke-width="5"/><ellipse cx="-10" cy="24" rx="11" ry="5" fill="#5cc28c" transform="rotate(-25 -10 24)"/><ellipse cx="10" cy="16" rx="10" ry="4.5" fill="#5cc28c" transform="rotate(25 10 16)"/><g transform="translate(0 -12) scale(.62)">${flowerInner(si)}</g></svg>`}
+  const it=ITEMS.find(x=>x.k===k);return it?`<svg class="${cls}" viewBox="-50 -50 100 100">${it.s}</svg>`:''};
+const itemCost=k=>k[0]==='f'&&!isNaN(k.slice(1))?1:(ITEMS.find(x=>x.k===k)||{c:0}).c;
+
+// ---------- wezentjes ----------
+const EYE=(x,y,s=1,dx=1,dy=-1)=>`<ellipse cx="${x}" cy="${y}" rx="${7*s}" ry="${7.6*s}" fill="#fff"/><circle cx="${x+dx*s}" cy="${y+dy*s}" r="${4.3*s}" fill="#2b2b2b"/><circle cx="${x+dx*s+1.6*s}" cy="${y+dy*s-1.8*s}" r="${1.6*s}" fill="#fff"/>`;
+const CHEEK=(x,y)=>`<ellipse cx="${x}" cy="${y}" rx="5" ry="3" fill="#ff8fa3" opacity=".55"/>`;
+const SMILE=(x,y,w=6,c='#2b2b2b')=>`<path d="M${x-w} ${y} Q${x} ${y+w*.9} ${x+w} ${y}" stroke="${c}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+const SHD='<ellipse cx="0" cy="42" rx="30" ry="5" fill="rgba(0,0,0,.13)"/>';
+const CREATURES=[
+ {k:'turbo',n:'Turbo',d:'een slak met een raceshirt die nooit haast heeft',
+  q:['Rustig aan, we hebben alle tijd.','Ik doe nooit mee aan de sprint. Wel aan de finish.','Vroem... vroem... (heel traag)'],
+  s:SHD+'<path d="M-42 38C-42 28 -22 26 8 26H22C24 6 28 -10 34 -12C44 -14 48 0 46 38Z" fill="#cfe58f"/><path d="M-40 36H44" stroke="#b5cf72" stroke-width="3" stroke-linecap="round"/>'
+  +'<path d="M31 -10L24 -30M41 -11L42 -30" stroke="#b5cf72" stroke-width="3.4" stroke-linecap="round"/>'
+  +'<circle cx="-8" cy="4" r="27" fill="#f2994a"/><path d="M-8 4m-6 0a6 6 0 1 1 12 0a11 11 0 1 1 -22 0a16 16 0 1 1 32 0a21 21 0 1 1 -42 0" stroke="#c96a2a" stroke-width="3" fill="none" stroke-linecap="round"/>'
+  +'<path d="M-30 -14L12 24" stroke="#fff" stroke-width="5" opacity=".85"/><path d="M-26 -18L16 20" stroke="#e8453c" stroke-width="2.5"/>'
+  +'<path d="M22 8C26 6 44 6 47 10L47 26C40 30 28 30 22 26Z" fill="#e8453c"/><circle cx="35" cy="17" r="6.5" fill="#fff"/><text x="35" y="20.5" font-size="10" font-weight="800" text-anchor="middle" fill="#e8453c" font-family="Nunito,sans-serif">1</text>'
+  +EYE(23,-34,.9,.5,-.3)+EYE(42,-34,.9,.5,-.3)+SMILE(38,-3,5)+CHEEK(44,2)},
+ {k:'prikkel',n:'Prikkel',d:'een egel die schrikt van zijn eigen stekels',
+  q:['Oei! O, dat was ik zelf maar.','Niet schrikken, ik prik niet expres.','Ik ben stoer. Echt waar. Bijna.'],
+  s:SHD+'<g fill="#6b4a30">'+Array.from({length:11},(_,j)=>{const a=(150+j*21)*Math.PI/180,x=-6+Math.cos(a)*30,y=10+Math.sin(a)*28,x2=-6+Math.cos(a)*46,y2=10+Math.sin(a)*42,p=.22;
+    return`<path d="M${(-6+Math.cos(a-p)*28).toFixed(1)} ${(10+Math.sin(a-p)*26).toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}L${(-6+Math.cos(a+p)*28).toFixed(1)} ${(10+Math.sin(a+p)*26).toFixed(1)}Z"/>`}).join('')+'</g>'
+  +'<ellipse cx="-6" cy="12" rx="34" ry="29" fill="#8a6446"/><path d="M-4 -30L-2 -40M8 -28L14 -37M-16 -28L-22 -36" stroke="#ff7f6e" stroke-width="3" stroke-linecap="round"/>'
+  +'<ellipse cx="18" cy="18" rx="22" ry="18" fill="#f0d2ad"/><circle cx="40" cy="16" r="4.5" fill="#2b2b2b"/>'
+  +EYE(14,8,1.05,0,-1.5)+EYE(28,10,.85,0,-1.5)+'<ellipse cx="24" cy="27" rx="3.4" ry="4.4" fill="#5a3a22"/>'+CHEEK(8,22)
+  +'<ellipse cx="-18" cy="40" rx="7" ry="4" fill="#6b4a30"/><ellipse cx="10" cy="40" rx="7" ry="4" fill="#6b4a30"/>'},
+ {k:'zoemba',n:'Zoemba',d:'een dikke hommel die eigenlijk te zwaar is om te vliegen',
+  q:['Zzzz... nog even zitten.','Vliegen? Morgen misschien.','Ik zoem vooral met mijn buik.'],
+  s:SHD+'<g class="wing"><ellipse cx="-16" cy="-30" rx="9" ry="13" fill="#e6f4ff" stroke="#b9d7ee" stroke-width="2" transform="rotate(-25 -16 -30)"/><ellipse cx="14" cy="-32" rx="8" ry="12" fill="#e6f4ff" stroke="#b9d7ee" stroke-width="2" transform="rotate(20 14 -32)"/></g>'
+  +'<path d="M-8 -26Q-14 -40 -20 -42M8 -26Q14 -40 20 -42" stroke="#2b2b2b" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="-20" cy="-42" r="3" fill="#2b2b2b"/><circle cx="20" cy="-42" r="3" fill="#2b2b2b"/>'
+  +'<circle cx="0" cy="6" r="32" fill="#ffd23f"/><path d="M-31.9 4Q0 10 31.9 4L31 14Q0 20 -31 14Z" fill="#3a2e2a"/><path d="M-27.7 22Q0 28 27.7 22L20 31Q0 36 -20 31Z" fill="#3a2e2a"/>'
+  +'<path d="M-4 37L0 46L4 37Z" fill="#3a2e2a"/>'+EYE(-11,-11,.9)+EYE(11,-11,.9)+SMILE(0,-2,5)+CHEEK(-19,-3)+CHEEK(19,-3)},
+ {k:'stip',n:'Stip',d:'een lieveheersbeestje dat haar stippen nooit juist telt',
+  q:['Eén, twee, vijf... ik ben weer kwijt.','Hoeveel stippen heb ik? Zeven? Negen?','Elke stip is een geluksstip!'],
+  s:SHD+'<path d="M-6 -32Q-12 -42 -18 -44M6 -32Q12 -42 18 -44" stroke="#2b2b2b" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="-18" cy="-44" r="3" fill="#2b2b2b"/><circle cx="18" cy="-44" r="3" fill="#2b2b2b"/>'
+  +'<circle cx="0" cy="-16" r="19" fill="#2b2b2b"/><circle cx="0" cy="12" r="30" fill="#e8453c"/><path d="M0 -12V40" stroke="#2b2b2b" stroke-width="2.4"/>'
+  +'<g fill="#2b2b2b"><circle cx="-16" cy="2" r="5.5"/><circle cx="-20" cy="20" r="4.5"/><circle cx="-8" cy="31" r="4"/><circle cx="15" cy="0" r="4"/><circle cx="19" cy="15" r="6"/><circle cx="12" cy="29" r="3.5"/><circle cx="23" cy="28" r="2.5"/></g>'
+  +'<ellipse cx="-12" cy="-2" rx="5" ry="3" fill="#fff" opacity=".35" transform="rotate(-30 -12 -2)"/>'
+  +EYE(-8,-20,.85,0,-.6)+EYE(8,-20,.85,0,-.6)+SMILE(0,-10,5,'#fff')
+  +'<text x="34" y="-26" font-size="16" font-weight="800" fill="#ff7f6e" font-family="Nunito,sans-serif">?</text>'},
+ {k:'knolletje',n:'Knolletje',d:'een radijsje op beentjes met een blaadjeskuif',
+  q:['Ik ben klein maar pittig.','Mijn kuif zit weer goed vandaag.','Wie wil er wortel? Ik ben een radijs!'],
+  s:SHD+'<path d="M-9 24L-12 40M9 24L12 40" stroke="#c9375a" stroke-width="4" stroke-linecap="round"/><ellipse cx="-15" cy="41" rx="6" ry="3" fill="#c9375a"/><ellipse cx="15" cy="41" rx="6" ry="3" fill="#c9375a"/>'
+  +'<path d="M0 -20C-6 -36 -20 -42 -24 -38C-22 -30 -12 -22 0 -20Z" fill="#4caf6e"/><path d="M0 -20C6 -38 20 -44 25 -40C22 -30 12 -22 0 -20Z" fill="#5cc28c"/><path d="M0 -20C-2 -36 2 -48 6 -48C9 -40 6 -28 0 -20Z" fill="#3f9b5f"/>'
+  +'<path d="M0 -22C24 -22 32 4 20 20C14 28 6 30 0 30C-6 30 -14 28 -20 20C-32 4 -24 -22 0 -22Z" fill="#ec4d76"/><path d="M-20 20C-12 30 12 30 20 20C14 26 -14 26 -20 20Z" fill="#fff" opacity=".7"/><ellipse cx="-12" cy="-10" rx="5" ry="8" fill="#fff" opacity=".25" transform="rotate(25 -12 -10)"/>'
+  +EYE(-9,2,.85)+EYE(9,2,.85)+SMILE(0,12,5)+CHEEK(-16,10)+CHEEK(16,10)},
+ {k:'graafje',n:'Graafje',d:'een mol met een te grote bril',
+  q:['Waar is de tuin? O, hier.','Deze bril is net een beetje te groot.','Ik graaf een tunnel naar jouw volgende tuin.'],
+  s:SHD+'<ellipse cx="0" cy="8" rx="33" ry="34" fill="#6b5a52"/><ellipse cx="0" cy="20" rx="20" ry="16" fill="#8a776d"/>'
+  +'<g fill="#ffb3b8"><ellipse cx="-28" cy="32" rx="10" ry="7"/><ellipse cx="28" cy="32" rx="10" ry="7"/></g><path d="M-36 34l-3 4M-31 37l-2 4M36 34l3 4M31 37l2 4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
+  +'<circle cx="-14" cy="-6" r="14" fill="#e8f5ff"/><circle cx="14" cy="-6" r="14" fill="#e8f5ff"/>'+EYE(-13,-5,1.05,0,0)+EYE(13,-5,1.05,0,0)
+  +'<g stroke="#3b4a5a" stroke-width="4" fill="none" stroke-linecap="round"><circle cx="-14" cy="-6" r="14"/><circle cx="14" cy="-6" r="14"/><path d="M-2 -8Q0 -11 2 -8M-28 -8L-34 -12M28 -8L34 -12"/></g>'
+  +'<path d="M-20 -14L-12 -16" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M8 -14L16 -16" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>'
+  +'<ellipse cx="0" cy="12" rx="8" ry="5.5" fill="#ff8fa3"/><path d="M-8 14L-22 12M-8 16L-22 18M8 14L22 12M8 16L22 18" stroke="#c8b8ae" stroke-width="1.4" stroke-linecap="round"/>'+SMILE(0,20,4)},
+ {k:'wiebel',n:'Wiebel',d:'een regenworm die danst bij elke noot',
+  q:['Speel nog een noot!','Wiebel, wiebel, ik dans al.','Muziek kriebelt in mijn staart.'],
+  s:SHD+'<path d="M-36 34C-28 14 -12 42 0 22C8 8 18 20 20 0" stroke="#ff9bb0" stroke-width="17" fill="none" stroke-linecap="round"/>'
+  +'<path d="M-26 22l4 6M-8 30l2 7M6 14l6 3" stroke="#f07a95" stroke-width="2" stroke-linecap="round"/>'
+  +'<circle cx="22" cy="-12" r="15" fill="#ff9bb0"/><path d="M8 0Q22 4 34 -2" stroke="#ff7f9a" stroke-width="5" fill="none" stroke-linecap="round" opacity=".6"/>'
+  +EYE(16,-15,.7,.5,-1)+EYE(29,-15,.7,.5,-1)+SMILE(23,-6,4)+CHEEK(13,-6)+CHEEK(33,-6)
+  +'<g fill="#ff7f6e" class="note"><ellipse cx="-24" cy="-14" rx="5.5" ry="4" transform="rotate(-20 -24 -14)"/><rect x="-19.6" y="-38" width="2.6" height="24"/><path d="M-17 -38C-10 -36 -8 -30 -10 -24C-12 -30 -14 -32 -17 -32Z"/></g>'},
+ {k:'kwaakie',n:'Kwaakie',d:'een kikker die denkt dat hij een prins is',
+  q:['Kus mij en ik word... nog steeds een kikker.','Welkom in mijn koninkrijk!','Kwaak. Dat is koninklijk voor hallo.'],
+  s:SHD+'<ellipse cx="-22" cy="38" rx="12" ry="5" fill="#3f9b5f"/><ellipse cx="22" cy="38" rx="12" ry="5" fill="#3f9b5f"/>'
+  +'<ellipse cx="0" cy="14" rx="35" ry="27" fill="#5cc28c"/><ellipse cx="0" cy="22" rx="22" ry="15" fill="#c8f0b8"/>'
+  +'<circle cx="-16" cy="-12" r="13" fill="#5cc28c"/><circle cx="16" cy="-12" r="13" fill="#5cc28c"/>'+EYE(-16,-12,1.05,0,-.5)+EYE(16,-12,1.05,0,-.5)
+  +'<path d="M-20 8Q0 22 20 8" stroke="#2b2b2b" stroke-width="2.8" fill="none" stroke-linecap="round"/>'+CHEEK(-24,10)+CHEEK(24,10)
+  +'<path d="M-11 -24L-13 -38L-5 -31L0 -42L5 -31L13 -38L11 -24Z" fill="#ffd23f" stroke="#f2a81d" stroke-width="1.5" stroke-linejoin="round"/><circle cx="0" cy="-29" r="2.2" fill="#e8453c"/>'},
+ {k:'pluis',n:'Pluis',d:'een paardenbloempluisje met oogjes',
+  q:['Blaas niet te hard, hé!','Ik zweef graag een beetje rond.','Waar de wind mij brengt, daar groei ik.'],
+  s:SHD+'<path d="M0 14Q2 28 0 36" stroke="#c9b48a" stroke-width="2.4" fill="none"/><ellipse cx="0" cy="38" rx="3" ry="5" fill="#a0784a"/>'
+  +'<circle cx="0" cy="-8" r="32" fill="#f6f8fc" stroke="#dde4ef" stroke-width="2"/>'
+  +'<g stroke="#c5cfdd" stroke-width="1.4" stroke-linecap="round">'+Array.from({length:20},(_,j)=>{const a=j*18*Math.PI/180;return`<path d="M${(Math.cos(a)*16).toFixed(1)} ${(-8+Math.sin(a)*16).toFixed(1)}L${(Math.cos(a)*30).toFixed(1)} ${(-8+Math.sin(a)*30).toFixed(1)}"/>`}).join('')+'</g>'
+  +'<g fill="#fff" stroke="#d3dbe7">'+Array.from({length:20},(_,j)=>{const a=j*18*Math.PI/180;return`<circle cx="${(Math.cos(a)*31).toFixed(1)}" cy="${(-8+Math.sin(a)*31).toFixed(1)}" r="3"/>`}).join('')+'</g>'
+  +'<circle cx="0" cy="-8" r="15" fill="#fff"/>'+EYE(-6,-10,.62,0,0)+EYE(6,-10,.62,0,0)+SMILE(0,-3,3.5)+CHEEK(-10,-2)+CHEEK(10,-2)},
+ {k:'lampje',n:'Lampje',d:'een vuurvliegje dat straalt in de nachttuin',
+  q:['Ik schijn een beetje licht op je tuin.','In het donker ben ik op mijn best.','Knip, knip, ik knipoog met mijn lampje.'],
+  s:SHD+'<circle class="glow" cx="0" cy="20" r="30" fill="#ffe066" opacity=".35"/>'
+  +'<ellipse cx="-17" cy="-2" rx="11" ry="18" fill="#e6f4ff" opacity=".85" stroke="#b9d7ee" stroke-width="2" transform="rotate(-30 -17 -2)"/><ellipse cx="17" cy="-2" rx="11" ry="18" fill="#e6f4ff" opacity=".85" stroke="#b9d7ee" stroke-width="2" transform="rotate(30 17 -2)"/>'
+  +'<ellipse cx="0" cy="20" rx="15" ry="19" fill="#ffe066"/><ellipse cx="0" cy="26" rx="9" ry="10" fill="#fff6c2"/>'
+  +'<path d="M-5 -28Q-12 -40 -18 -42M5 -28Q12 -40 18 -42" stroke="#3b4a6a" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="-18" cy="-42" r="3" fill="#ffe066"/><circle cx="18" cy="-42" r="3" fill="#ffe066"/>'
+  +'<circle cx="0" cy="-12" r="18" fill="#3b4a6a"/>'+EYE(-7,-14,.9,0,-.4)+EYE(7,-14,.9,0,-.4)+SMILE(0,-4,4.5,'#fff')+CHEEK(-12,-5)+CHEEK(12,-5)}];
+const creatureSvg=(k,cls='wz')=>{const c=CREATURES.find(x=>x.k===k)||CREATURES[0];return`<svg class="${cls} wz-${c.k}" viewBox="-50 -50 100 100" aria-hidden="true">${c.s}</svg>`};
+
+// ---------- opslag ----------
+const $=id=>document.getElementById(id);
+// Elke speler heeft een eigen sleutel: bloeisprong.speler.<id>. De lijst staat in bloeisprong.spelers.
+const PKEY='bloeisprong.spelers',PFX='bloeisprong.speler.',MAXP=8;
+let PL=(()=>{try{return JSON.parse(localStorage.getItem(PKEY))||{}}catch(e){return{}}})();
+if(!Array.isArray(PL.list))PL.list=[];
+const savePL=()=>{try{localStorage.setItem(PKEY,JSON.stringify(PL))}catch(e){}};
+const readSave=id=>{try{return JSON.parse(localStorage.getItem(PFX+id))||{}}catch(e){return{}}};
+const writeSave=(id,S)=>{try{localStorage.setItem(PFX+id,JSON.stringify(S))}catch(e){}};
+let SAVE={},PID=null;
+const store=()=>{if(PID)writeSave(PID,SAVE)};
+function normalize(S){
+  S.max=Math.min(MAXL,Math.max(S.max||1,S.level||1));
+  if(!Array.isArray(S.done)){S.done=[];for(let i=1;i<S.max;i++)S.done.push(i);S.seeds=5+3*S.done.length}
+  if(!Array.isArray(S.garden)||S.garden.length!==48)S.garden=Array(48).fill('');
+  S.seeds=S.seeds||0;return S;
+}
+let level=1,mode='reis',muted=false,lv,hist,pieces,vis,won=false,cells=[],chap=0,curSeason=0;
+const today=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
+const doneSet=()=>new Set(SAVE.done);
+const bloomCount=()=>SAVE.done.length+(SAVE.dailyCount||0);
+const speciesCount=()=>Math.min(NORMAL.length,3+Math.floor(bloomCount()/5));
+const chapOf=L=>L<=MAXL?Math.floor((L-1)/10):L<NSTART?20+Math.floor((L-WSTART)/10):NIGHTC;
+const chapDone=c=>{const d=doneSet(),f=chapFirst(c);let k=0;for(let i=f;i<f+10;i++)if(d.has(i))k++;return k};
+const seasonDone=s=>{const d=doneSet();let k=0;for(let i=s*50+1;i<=s*50+50;i++)if(d.has(i))k++;return k};
+function dailyChap(){const d=new Date(),m=d.getMonth(),s=m>=2&&m<=4?0:m>=5&&m<=7?1:m>=8&&m<=10?2:3;const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);return s*5+doy%5}
+
+// ---------- geluid ----------
+let ac,master,songBus=null,songTimer,songChap=-1,NOISE;
+function audio(){
+  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+  if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=.55;
+    const d=ac.createDelay(),fb=ac.createGain(),wet=ac.createGain();d.delayTime.value=.27;fb.gain.value=.33;wet.gain.value=.28;
+    master.connect(ac.destination);master.connect(d);d.connect(fb);fb.connect(d);d.connect(wet);wet.connect(ac.destination)}catch(e){return}}
+  if(ac.state!=='running'){try{ac.resume()}catch(e){}}
+  try{const b=ac.createBuffer(1,1,22050),src=ac.createBufferSource();src.buffer=b;src.connect(ac.destination);src.start(0)}catch(e){}
+}
+['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,audio,{passive:true}));
+function tone(f,t0=0,dur=1.5,vol=.22){if(!ac||muted)return;if(ac.state!=='running'){ac.resume().then(()=>tone(f,t0,dur,vol)).catch(()=>{});return}
+  const t=ac.currentTime+t0,o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain(),g2=ac.createGain();
+  o.type='sine';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*2;g2.gain.value=.12;o2.connect(g2);g2.connect(g);o.connect(g);g.connect(master);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05)}
+const PROGS=[[0,5,3,4],[0,3,5,4],[5,3,0,4],[0,4,5,3],[0,3,1,4],[3,4,0,0],[0,5,1,4],[0,2,3,4]];
+const RH=[[1,1,1,1],[2,1,1],[1,1,2],[2,2],[1.5,.5,2],[1,.5,.5,2],[3,1],[.5,.5,1,2]];
+const LAYERS=['melodie','bas','akkoorden','arpeggio','tweede melodie','klokjes','tweede stem','zacht ritme','tegenmelodie','slotakkoord'];
+function phrase(R,prog,resolve){
+  const notes=[];let cur=9;
+  for(let b=0;b<4;b++){
+    const d=prog[b],ct=[d+7,d+9,d+11,d+14].filter(x=>x>=6&&x<=16);
+    const rh=b===3?(resolve?[2,2]:[1,1,2]):RH[Math.floor(R()*RH.length)];let t=0;
+    rh.forEach((len,j)=>{let deg;
+      if(j===0)deg=ct.reduce((a,x)=>Math.abs(x-cur)<Math.abs(a-cur)?x:a,ct[0]);
+      else deg=Math.max(6,Math.min(16,cur+[-2,-1,-1,1,1,2][Math.floor(R()*6)]));
+      if(b===3&&j===rh.length-1)deg=resolve?7:11;
+      notes.push({t:b*4+t,len,deg});cur=deg;t+=len});
+  }
+  return notes;
+}
+const CC={};
+function compose(c){
+  if(CC[c])return CC[c];
+  const s=seasonOf(c),L=LANDS[landOf(c)],R=rng(1000+c*131),mode=L.mode,root=(L.root+[0,2,-3,-1,-5][s]+12)%12,base=130.81*2**(root/12);
+  const f=deg=>base*2**((12*Math.floor(deg/7)+mode[((deg%7)+7)%7])/12);
+  const prog=PROGS[Math.floor(R()*PROGS.length)],A=phrase(R,prog,false),B=phrase(R,prog,true);
+  const pent=mode[2]===4?[0,1,2,4,5]:[0,2,3,4,6];
+  return CC[c]={s,f,prog,A,B,pent,beat:60/(L.bpm-s*2),inst:SEASONS[s].inst};
+}
+function play(nm,f,t,dur,vol,out){
+  const g=ac.createGain();g.connect(out);
+  const o=(ty,fr)=>{const x=ac.createOscillator();x.type=ty;x.frequency.value=fr;return x},go=(x,e)=>{x.start(t);x.stop(e)};
+  if(nm==='tick'){if(!NOISE){NOISE=ac.createBuffer(1,Math.floor(ac.sampleRate*.1),ac.sampleRate);const d=NOISE.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}
+    const sr=ac.createBufferSource(),bp=ac.createBiquadFilter();sr.buffer=NOISE;bp.type='bandpass';bp.frequency.value=3200;bp.Q.value=1.2;sr.connect(bp);bp.connect(g);
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.06);sr.start(t);sr.stop(t+.1);return}
+  if(nm==='pad'){const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;lp.connect(g);
+    for(const det of[-6,6]){const x=o('triangle',f);x.detune.value=det;x.connect(lp);go(x,t+dur+.9)}
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.4);g.gain.setValueAtTime(vol,t+Math.max(.41,dur-.1));g.gain.linearRampToValueAtTime(0,t+dur+.8);return}
+  if(nm==='flute'){const x=o('sine',f),l=o('sine',5),lg=ac.createGain();lg.gain.value=f*.004;l.connect(lg);lg.connect(x.frequency);x.connect(g);go(x,t+dur+.5);go(l,t+dur+.5);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.09);g.gain.setValueAtTime(vol*.8,t+Math.max(.1,dur-.05));g.gain.linearRampToValueAtTime(0,t+dur+.4);return}
+  const P={marimba:{w:'sine',d:.8,p:[[4,.25,.12]]},kalimba:{w:'triangle',d:1.3,p:[[3,.08,.3]]},epiano:{w:'sine',d:1.6,fm:1.2},celesta:{w:'sine',d:2,p:[[2.76,.3,.6],[5.4,.1,.3]]},
+    bass:{w:'sine',d:1.4,p:[[2,.3,.6]]},bell:{w:'sine',d:2.6,p:[[2.76,.2,1]]},harp:{w:'triangle',d:2.2,p:[[2,.22,.9],[3,.06,.4]]}}[nm];
+  const dec=Math.max(P.d,nm==='bass'?dur:0),x=o(P.w,f);x.connect(g);go(x,t+dec+.1);
+  if(P.fm){const m=o('sine',f),mg=ac.createGain();mg.gain.setValueAtTime(f*P.fm,t);mg.gain.exponentialRampToValueAtTime(1,t+dec);m.connect(mg);mg.connect(x.frequency);go(m,t+dec+.1)}
+  for(const[r,a,d]of P.p||[]){const y=o('sine',f*r),yg=ac.createGain();yg.gain.setValueAtTime(a,t);yg.gain.exponentialRampToValueAtTime(.0001,t+d);y.connect(yg);yg.connect(g);go(y,t+d+.05)}
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dec);
+}
+function stopSong(){if(songBus&&ac){const g=songBus;try{g.gain.cancelScheduledValues(ac.currentTime);g.gain.setValueAtTime(g.gain.value,ac.currentTime);g.gain.linearRampToValueAtTime(0,ac.currentTime+.4)}catch(e){}
+  setTimeout(()=>{try{g.disconnect()}catch(e){}},700)}songBus=null;songChap=-1;clearTimeout(songTimer);songUI()}
+function playSong(c,k){
+  audio();if(!ac||k<1)return;stopSong();
+  const C=compose(c),bus=ac.createGain();bus.gain.value=muted?0:1;bus.connect(master);songBus=bus;songChap=c;
+  const t0=ac.currentTime+.25,bt=C.beat,I=C.inst,at=b=>t0+b*bt;
+  const mel=k>=5?C.A.concat(C.B.map(n=>({...n,t:n.t+16}))):C.A.concat(C.A.map((n,i,a)=>({...n,t:n.t+16,deg:i===a.length-1?7:n.deg})));
+  for(const n of mel){play(I,C.f(n.deg),at(n.t),n.len*bt,.2,bus);if(k>=7)play(I,C.f(n.deg-2),at(n.t),n.len*bt,.07,bus)}
+  for(let bar=0;bar<8;bar++){const d=C.prog[bar%4],b0=bar*4;
+    if(k>=2){play('bass',C.f(d-7),at(b0),2*bt,.24,bus);play('bass',C.f(d-3),at(b0+2),2*bt,.17,bus)}
+    if(k>=3)for(const x of[0,2,4])play('pad',C.f(d+x),at(b0),4*bt,.04,bus);
+    if(k>=4)[0,2,4,7,4,2,0,2].forEach((x,j)=>play(I,C.f(d+x),at(b0+j/2),.5*bt,.055,bus));
+    if(k>=6&&bar%2){play('bell',C.f(d+14),at(b0),3*bt,.05,bus);play('bell',C.f(d+16),at(b0+2.5),2*bt,.035,bus)}
+    if(k>=8)for(let j=0;j<8;j++)play('tick',0,at(b0+j/2),.05,j%2?.012:.028,bus);
+    if(k>=9){play('flute',C.f(d+11),at(b0),2*bt,.045,bus);play('flute',C.f(d+9),at(b0+2),2*bt,.045,bus)}
+  }
+  let end=32;
+  if(k>=10){for(const x of[0,2,4])play('pad',C.f(x),at(32),6*bt,.05,bus);play('bass',C.f(-7),at(32),4*bt,.24,bus);
+    [0,2,4,7,9,11,14].forEach((x,j)=>play(I,C.f(x+7),at(32+j*.5),2*bt,.13,bus));play('bell',C.f(21),at(35.5),4*bt,.06,bus);end=39}
+  songTimer=setTimeout(()=>{if(songBus===bus){songBus=null;songChap=-1;songUI()}},(end*bt+2.5)*1000);songUI();
+}
+const noteOf=i=>{const C=compose(chap),n=lv.n,idx=(n-1-Math.floor(i/n))+(i%n);return C.f(7*(Math.floor(idx/5)+1)+C.pent[idx%5])};
+
+// ---------- hoofdstukken ----------
+// 0-19: landschappen (seizoen*5+landschap), 20-23: wondertuin per seizoen, 24: nachttuin
+const WSTART=201,NSTART=241,LAST=250,NIGHTC=24;
+const KINDS_S=[['stone'],['pond'],['leaf'],['ice']];
+const KINDS_N=[['stone','pond'],['leaf','ice'],['pond','ice'],['stone','leaf'],['pond','leaf'],['stone','ice'],['stone','pond','leaf'],['pond','leaf','ice'],['stone','pond','ice'],['stone','pond','leaf','ice']];
+const WONDERS={
+ stone:{n:'Stapstenen',t:'Op een stapsteen mag je zo vaak landen als je wil. Hij hoeft niet te bloeien. Toren, loper en dame stoppen erop, net als op een knop.'},
+ pond:{n:'Vijvers',t:'Vijvers horen per twee bij elkaar: kijk naar de kleur van de waterlelie. Land je op de ene, dan duik je op bij de andere en spring je van daar verder.'},
+ leaf:{n:'Bladerhopen',t:'Onder een bladerhoop zit een knop. De eerste keer dat je erop landt, waaien de bladeren weg. De tweede keer bloeit hij.'},
+ ice:{n:'IJs',t:'Op ijs glij je door in de richting van je sprong, tot je van het ijs af bent. Het paard glijdt in de richting van zijn lange stap. Kom je dan niet op een knop, steen of vijver uit, dan kan die sprong niet.'}};
+const seasonOf=c=>c<20?Math.floor(c/5):c<24?c-20:4;
+const landOf=c=>c<20?c%5:c<24?5:6;
+const chapFirst=c=>c<20?c*10+1:c<24?WSTART+(c-20)*10:NSTART;
+const isSpecial=L=>L>MAXL;
+const chapOpen=c=>c<20?chapFirst(c)<=SAVE.max:c<24?seasonDone(c-20)>=25:doneSet().has(MAXL);
+const canPlay=L=>L>=1&&L<=LAST&&(L<=MAXL?L<=SAVE.max:chapOpen(chapOf(L))&&(L===chapFirst(chapOf(L))||doneSet().has(L-1)));
+function frontier(c){const f=chapFirst(c),d=doneSet(),end=c<20?Math.min(f+9,SAVE.max):f+9;for(let i=f;i<=end;i++)if(!d.has(i))return i;return f}
+function levelSpec(L){const c=chapOf(L),k=L-chapFirst(c);return c<24?{seed:L*7919+31,diff:3+(c-20)*2+k*2,kinds:KINDS_S[c-20]}:{seed:L*7919+31,diff:16+k*2,kinds:KINDS_N[k]}}
+const LVC={};
+function makeLevel(L){if(LVC[L])return LVC[L];const sp=isSpecial(L)?levelSpec(L):null;return LVC[L]=sp?generateW(sp.seed,sp.diff,sp.kinds):generate(L*9973+17,DIFF(L))}
+const songTitle=c=>c===NIGHTC?'Lied van de nachttuin':`Lied van de ${LANDS[landOf(c)].n.toLowerCase()} · ${SEASONS[seasonOf(c)].n.toLowerCase()}`;
+const NORMAL=[...Array(38).keys(),40,41],NIGHTSP=[38,39];
+const nightFlowerOk=j=>doneSet().has(j?LAST:NSTART+4);
+const availSpecies=night=>NORMAL.slice(0,speciesCount()).concat(night?NIGHTSP.filter((x,j)=>nightFlowerOk(j)):[]);
+
+// ---------- spel ----------
+const pieceGlyph=p=>PIECES[p].g+'︎';
+const BUD='<svg class="bud" viewBox="-20 -20 40 40"><path d="M0 14C0 4 0 0 0 -2" stroke="#3fa877" stroke-width="3" fill="none"/><ellipse cx="-7" cy="4" rx="7" ry="4" fill="#5cc28c" transform="rotate(-30 -7 4)"/><ellipse cx="0" cy="-7" rx="6" ry="8" fill="#7fd6a4"/></svg>';
+const SPK=['','','stone','pond','ice'],PCOL=['#ff7f6e','#ffd23f','#b69cff'];
+const STONE='<svg class="spx" viewBox="-50 -50 100 100"><ellipse cx="0" cy="10" rx="40" ry="27" fill="rgba(0,0,0,.14)"/><ellipse cx="0" cy="3" rx="40" ry="27" fill="#b8c2c8"/><ellipse cx="-4" cy="0" rx="32" ry="20" fill="#c9d1d6"/><ellipse cx="-12" cy="-7" rx="14" ry="6" fill="#fff" opacity=".45"/></svg>';
+const pondSvg=col=>`<svg class="spx" viewBox="-50 -50 100 100"><ellipse cx="0" cy="2" rx="46" ry="42" fill="#4fa3dc"/><ellipse cx="-4" cy="-4" rx="34" ry="28" fill="#7cc4ec"/><path d="M-26 2Q-16 -4 -6 2T14 2M-14 16Q-6 11 2 16T18 16" stroke="#fff" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/><path d="M14 -10L36 -4A14 14 0 1 1 30 -22Z" fill="#4caf6e"/><g fill="${col}" transform="translate(22 -14)"><circle cx="0" cy="-6" r="5"/><circle cx="6" cy="0" r="5"/><circle cx="0" cy="6" r="5"/><circle cx="-6" cy="0" r="5"/></g><circle cx="22" cy="-14" r="3.5" fill="#fff6c2"/></svg>`;
+const ICE='<svg class="spx" viewBox="-50 -50 100 100"><path d="M-32 -20L-14 -32M-32 4L10 -28M-16 26L30 -6" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9"/><path d="M22 18v14M15 25h14M17 20l10 10M27 20l-10 10" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const LEAFPILE='<svg class="pile" viewBox="-50 -50 100 100"><path d="M-44 34C-40 0 -18 -20 0 -20C18 -20 40 0 44 34Z" fill="#a0673a"/><path d="M-36 30C-30 6 -14 -8 0 -8C14 -8 30 6 36 30Z" fill="#b97a45"/>'+[[-22,14,-30,'#e8873a'],[18,16,25,'#d9541e'],[0,-6,80,'#f2c14e'],[-6,22,150,'#b5523b'],[14,-2,-60,'#e8873a'],[-18,-2,20,'#f2c14e'],[4,10,-10,'#e8873a'],[26,26,40,'#f2c14e'],[-28,28,-70,'#d9541e']].map(([x,y,r,c])=>`<path d="M${x-12} ${y}C${x-12} ${y-9} ${x-3} ${y-12} ${x+12} ${y-10}C${x+10} ${y+2} ${x+2} ${y+7} ${x-12} ${y}Z" fill="${c}" stroke="rgba(90,40,10,.35)" stroke-width="1.2" transform="rotate(${r} ${x} ${y})"/>`).join('')+'</svg>';
+const wonderPic=k=>k==='stone'?STONE:k==='pond'?pondSvg(PCOL[0]):k==='leaf'?BUD.replace('class="bud"','class="spx"')+LEAFPILE:`<span class="icepic">${ICE}</span>`;
+function theme(c){
+  const s=seasonOf(c),l=landOf(c),S=SEASONS[s],L=LANDS[l],r=document.documentElement;
+  for(const k of['bg','bg2','soil','soil2'])r.style.setProperty('--'+k,S[k]);
+  r.style.setProperty('--board',L.board&&s!==3?L.board:S.board);r.style.setProperty('--water',L.water?L.water[s]:'transparent');
+  if(s===4)r.dataset.night='1';else delete r.dataset.night;
+  if(curSeason!==s||!$('amb').childElementCount){curSeason=s;ambient(s)}
+}
+function ambient(s){const t=SEASONS[s].part;$('amb').innerHTML=Array.from({length:t==='firefly'?16:12},()=>{const d=9+Math.random()*9,dl=Math.random()*15;
+  return`<span class="amb amb-${t}" style="left:${Math.random()*100}vw;--dx:${Math.random()*120-60}px;--r:${Math.random()*540}deg;${t==='firefly'?`animation:rise2 ${d*1.6}s linear -${dl}s infinite,blink ${1.4+Math.random()*2}s ease-in-out -${Math.random()*2}s infinite`:`animation-duration:${d}s;animation-delay:-${dl}s`}"></span>`}).join('')}
+let navPrev=0,navNext=0;
+function load(){
+  chap=mode==='dag'?dailyChap():chapOf(level);
+  const seed=mode==='dag'?today()*7+13:isSpecial(level)?levelSpec(level).seed:level*9973+17;
+  lv=mode==='dag'?generate(seed,12):makeLevel(level);
+  if(!lv.solM)lv.solM=lv.sol.slice(1).map(x=>({at:x,to:x}));
+  if(!lv.pcol){lv.pcol={};let k=0;if(lv.pond)lv.pond.forEach((j,i)=>{if(j>=0&&lv.pcol[i]==null){lv.pcol[i]=lv.pcol[j]=k++}})}
+  cnt=Array(lv.n*lv.n).fill(0);cnt[lv.start]=1;hist=[{pos:lv.start,p:lv.p0,bud:lv.start,at:lv.start}];won=false;
+  const R=rng(seed+777),A=availSpecies(chap===NIGHTC),M=A.length;
+  lv.spec=lv.land.map(()=>A[R()<.5?Math.max(0,M-1-Math.floor(R()*3)):Math.floor(R()*M)]);
+  const S=SEASONS[seasonOf(chap)],L=LANDS[landOf(chap)],dec=[...L.deco,S.deco,S.deco];
+  theme(chap);
+  const b=$('board');b.style.gridTemplateColumns=`repeat(${lv.n},minmax(0,1fr))`;
+  b.innerHTML=lv.land.map((l,i)=>{const k=kindOf(lv,i);return`<div class="cell ${k===1?'land':k?'land sp-'+SPK[k]:'grass'}" data-i="${i}">${!k&&lv.grass[i]>=0?decoSvg(dec[lv.grass[i]]):''}</div>`}).join('')+'<div class="token" id="token"><div class="in" id="tin"></div></div>';
+  cells=[...b.querySelectorAll('.cell')];
+  if(mode==='dag'){navPrev=navNext=0}
+  else if(!isSpecial(level)){navPrev=level>1?level-1:0;navNext=level<SAVE.max?level+1:0}
+  else{const f=chapFirst(chap);navPrev=level>f?level-1:0;navNext=level<f+9&&canPlay(level+1)?level+1:0}
+  $('bPrev').hidden=$('bNextL').hidden=mode==='dag';$('bPrev').disabled=!navPrev;$('bNextL').disabled=!navNext;
+  $('bDag').classList.toggle('on',mode==='dag');
+  $('sub').textContent=mode==='dag'?'Dagtuin':!isSpecial(level)?'Tuin '+level:(chap===NIGHTC?'Nachttuin ':'Wondertuin ')+(level-chapFirst(chap)+1);
+  $('sub2').textContent=chap===NIGHTC?'Nacht · maan en sterren':chap>=20?`${S.n} · ${WONDERS[KINDS_S[chap-20][0]].n.toLowerCase()}`:S.n+' · '+L.n;
+  $('foot').textContent=mode==='dag'?(SAVE.daily===today()?'Deze dagtuin bloeide al. Morgen groeit er een nieuwe.':'Elke dag een nieuwe tuin, goed voor 3 zaadjes.'):`${songTitle(chap)}: ${chapDone(chap)}/10 stukjes`;
+  draw(true);
+  if(mode!=='dag'&&chap>=20&&!(SAVE.rules||[]).includes(chap))showRule(chap);
+}
+function showRule(c){
+  if(c===NIGHTC){$('ruleT').textContent='Welkom in de nachttuin';$('ruleP').textContent='Hier komen alle tuinwonderen samen: stapstenen, vijvers, bladerhopen en ijs. De vuurvliegjes geven licht. Na 5 tuinen bloeit de Maanbloem, na 10 de Sterrenbloem.';
+    $('rulePic').innerHTML=`<div class="rp night">${flowerSvg(38,'')}</div>`}
+  else{const k=KINDS_S[c-20][0],W=WONDERS[k];$('ruleT').textContent='Nieuw tuinwonder: '+W.n.toLowerCase();$('ruleP').textContent=W.t;$('rulePic').innerHTML=`<div class="rp sp-${SPK[{stone:2,pond:3,ice:4}[k]]||'leaf'}">${wonderPic(k)}</div>`}
+  $('ovRule').classList.add('show');
+}
+$('bRule').onclick=()=>{$('ovRule').classList.remove('show');SAVE.rules=(SAVE.rules||[]).concat(chap);store();tone(523,0,.8,.12);tone(784,.15,1,.1)};
+function bloomStep(i){for(let k=hist.length-1;k>=0;k--)if(hist[k].bud===i)return k;return 0}
+function draw(instant){
+  const h=hist[hist.length-1],can=won?[]:wmoves(lv,h.pos,h.p,cnt).map(m=>m.at);
+  cells.forEach((c,i)=>{const k=kindOf(lv,i);if(!k)return;let want,html;
+    if(k===1){const nd=needOf(lv,i),bl=cnt[i]>=nd;
+      if(bl){const o=bloomStep(i);want='f'+o;html=flowerSvg(lv.spec[i],'flower',(o*23)%72)}
+      else{want='b'+cnt[i];html=BUD+(nd===2&&cnt[i]===0?LEAFPILE:'')+(lv.trans[i]?`<span class="badge">${pieceGlyph(lv.trans[i])}</span>`:'')}
+      c.classList.toggle('visited',bl)}
+    else{want='x';html=k===2?STONE:k===3?pondSvg(PCOL[lv.pcol[i]]):ICE}
+    if(c.dataset.s!==want){c.dataset.s=want;c.innerHTML=html}
+    c.classList.toggle('can',can.includes(i));c.classList.remove('hint')});
+  place(instant);
+  $('tin').textContent=pieceGlyph(h.p);
+  const tot=lv.land.filter(Boolean).length,bl=lv.land.reduce((a,l,i)=>a+(l&&cnt[i]>=needOf(lv,i)?1:0),0);
+  $('count').textContent=bl+'/'+tot;$('vine').style.width=(100*bl/tot)+'%';$('pieceName').textContent=PIECES[h.p].n;
+}
+function placeAt(i,instant){
+  const c=cells[i],t=$('token');if(!c||!t||!c.offsetWidth)return;
+  t.style.width=c.offsetWidth+'px';t.style.height=c.offsetHeight+'px';$('tin').style.fontSize=(c.offsetWidth*.42)+'px';
+  if(instant)t.style.transition='none';t.style.transform=`translate(${c.offsetLeft}px,${c.offsetTop}px)`;
+  if(instant){void t.offsetWidth;t.style.transition=''}
+}
+function place(instant){if(hist&&hist.length)placeAt(hist[hist.length-1].pos,instant)}
+function anim(cls){const t=$('tin');t.classList.remove('hop','morph');void t.offsetWidth;t.classList.add(cls)}
+function move(i){
+  if(won)return;const h=hist[hist.length-1],m=wmoves(lv,h.pos,h.p,cnt).find(x=>x.at===i);if(!m)return;
+  audio();const st=wstep(lv,cnt,m.to,h.p);hist.push({pos:m.to,p:st.p,bud:st.bud,at:m.at});
+  draw();anim('hop');danceWho();
+  const ka=kindOf(lv,m.at),slide=m.at!==m.to;
+  if(slide){placeAt(m.at);
+    if(ka===4)[1,1.12,1.26,1.5].forEach((x,j)=>tone(noteOf(m.at)*x,.07*j,.5,.09));else{tone(noteOf(m.at)/2,0,.6,.14);tone(noteOf(m.at)*.75,.1,.6,.1)}
+    setTimeout(()=>{if(hist[hist.length-1]&&hist[hist.length-1].pos===m.to&&hist.length&&lv&&cells[m.to]){place();if(ka===3)anim('morph')}tone(noteOf(m.to))},ka===3?420:360);
+  }else tone(noteOf(m.to));
+  if(st.p!==h.p){setTimeout(()=>{anim('morph');tone(noteOf(m.to)*1.5,0,1.2,.15);tone(noteOf(m.to)*2,.12,1.2,.12)},slide?760:380);toast('Je bent nu een '+PIECES[st.p].n+' '+pieceGlyph(st.p))}
+  else if(st.bud>=0&&cnt[st.bud]<needOf(lv,st.bud))toast('De bladeren waaien weg. Nog een keer landen en hij bloeit.');
+  if(wleft(lv,cnt)===0){won=true;return setTimeout(win,slide?480:0)}
+  if(!wmoves(lv,m.to,st.p,cnt).length){toast('Geen sprongen meer. Ga rustig een paar stappen terug.');const u=$('bUndo');u.classList.remove('nudge');void u.offsetWidth;u.classList.add('nudge')}
+}
+function undo(){if(hist.length<2||won)return;const r=hist.pop();if(r.bud>=0)cnt[r.bud]--;tone(noteOf(hist[hist.length-1].pos)/2,0,.8,.12);draw()}
+function reset(){if(won)return;hist=hist.slice(0,1);cnt.fill(0);cnt[lv.start]=1;draw()}
+function hint(){
+  if(won)return;const h=hist[hist.length-1];let nx;
+  if(hist.length-1<lv.solM.length&&hist.slice(1).every((x,k)=>lv.solM[k].at===x.at&&lv.solM[k].to===x.pos))nx=lv.solM[hist.length-1].at;
+  else{const r=wsolve(lv,h.pos,h.p,cnt,150000);
+    if(r===null)return toast('Vanaf hier lukt het niet meer. Ga een paar stappen terug.');
+    if(r===undefined||!r.length)return toast('Moeilijke stand. Probeer eens een stap terug.');nx=r[0].at}
+  cells[nx].classList.add('hint');tone(noteOf(nx),0,1,.1);setTimeout(()=>cells[nx]&&cells[nx].classList.remove('hint'),2200);
+}
+function routeSong(){hist.forEach((h,k)=>setTimeout(()=>{tone(noteOf(h.pos),0,1.6,.2);const f=h.bud>=0&&cells[h.bud]&&cells[h.bud].querySelector('.flower');if(f){f.classList.remove('sing');void f.offsetWidth;f.classList.add('sing')}},k*230))}
+let winChap=-1,winLayers=0;
+function win(){
+  won=true;draw();
+  const sp0=availSpecies(true),played=level,c=chap,S=SEASONS[seasonOf(c)];
+  const open0=[20,21,22,23,NIGHTC].map(chapOpen);
+  const rew=[];let first=false,title=['Tuin in bloei!','Prachtig!','Wat een tuin!','Alles staat open!'][(SAVE.done.length+hist.length)%4];
+  if(mode==='reis'){
+    first=!doneSet().has(level);
+    if(first){SAVE.done.push(level);SAVE.seeds+=3;rew.push('+3 zaadjes')}else{SAVE.seeds+=1;rew.push('+1 zaadje')}
+    if(!isSpecial(level)){SAVE.max=Math.max(SAVE.max,Math.min(MAXL,level+1));if(level<MAXL)level++;else if(chapOpen(NIGHTC)&&chapDone(NIGHTC)<10)level=frontier(NIGHTC)}
+    else{const f=chapFirst(c);level=level<f+9?level+1:Math.min(MAXL,SAVE.max)}
+    SAVE.level=level;
+  }else if(SAVE.daily!==today()){SAVE.daily=today();SAVE.dailyCount=(SAVE.dailyCount||0)+1;SAVE.seeds+=3;rew.push('+3 zaadjes')}
+  else rew.push('Dagtuin opnieuw gespeeld');
+  [20,21,22,23,NIGHTC].forEach((x,j)=>{if(!open0[j]&&chapOpen(x))rew.push(x===NIGHTC?'Nieuw: de nachttuin!':`Nieuw: de wondertuin van de ${SEASONS[x-20].n.toLowerCase()}!`)});
+  const sp1=availSpecies(true),fresh=sp1.filter(x=>!sp0.includes(x));store();seedUI();
+  const k=chapDone(c);winChap=mode==='reis'?c:-1;winLayers=k;
+  if(mode==='reis'&&first&&k===10)title=c===NIGHTC?'De nachttuin straalt!':'Het lied is af!';
+  if(mode==='reis'&&first&&c<20&&seasonDone(seasonOf(c))===50)title=S.n==='Winter'?'Het hele jaar staat in bloei!':`De ${S.n.toLowerCase()} is rond!`;
+  if(mode==='reis'&&played===MAXL&&first)title='Alle 200 tuinen bloeien!';
+  const ITM=ITEMS.filter(x=>x.at>bloomCount()-(mode==='reis'&&first||rew[0]==='+3 zaadjes'?1:0)&&x.at<=bloomCount());
+  setTimeout(()=>{routeSong();petals()},500);
+  setTimeout(()=>{
+    $('winCr').innerHTML=player()?creatureSvg(player().cr,'wz cheer'):'';
+    $('winT').textContent=title;
+    $('winP').textContent=mode==='reis'?'Je route werd een melodie. Luister nu naar het lied van deze tuin.':'Je route werd een melodie.';
+    $('winRew').innerHTML=rew.map(r=>`<span>${r}</span>`).join('')+ITM.map(x=>`<span>Nieuw voor je thuistuin: ${x.n}</span>`).join('');
+    $('winSp').innerHTML=fresh.map(si=>`<div class="newsp">${flowerSvg(si,'')}<div><b>${NIGHTSP.includes(si)?'Nachtbloem':'Nieuw in je herbarium'}: ${SPECIES[si][0]}</b><br><span class="muted">${SPECIES[si][1]}</span></div></div>`).join('');
+    $('winSong').innerHTML=mode==='reis'?`<div class="song"><b>${songTitle(c)}</b>${k}/10 stukjes${first?' · nieuw: '+LAYERS[k-1]:''}<div class="dots">${Array.from({length:10},(_,j)=>`<i class="${j<k?(first&&j===k-1?'on new':'on'):''}"></i>`).join('')}</div></div>`:'';
+    {const it=pickTalk(),box=$('winTalk');box.hidden=false;box.innerHTML=talkHtml(it,false).replace(/<span class="th">[^<]*<\/span>/,'')+(it.a?'<button class="btn small" id="bTalkA">Antwoord</button>':'');
+      const bt=$('bTalkA');if(bt)bt.onclick=()=>{box.innerHTML=talkHtml(it,true)}}
+    $('bNext').textContent=mode==='dag'?'Verder met je reis →':isSpecial(played)&&played===chapFirst(c)+9?'Terug naar je reis →':played===MAXL?(level!==MAXL?'Naar de nachttuin →':'Nog eens spelen'):'Volgende tuin →';
+    $('ovWin').classList.add('show');
+    if(mode==='reis')playSong(c,k);songUI();
+  },500+hist.length*230+500);
+}
+function songUI(){
+  const b=$('bReplay');if(b)b.textContent=winChap<0?'♪ Melodie':(songBus&&songChap===winChap?'■ Stop':'♪ Lied');
+  document.querySelectorAll('[data-song]').forEach(x=>{x.textContent=songBus&&songChap===+x.dataset.song?'■':'▶'});
+}
+function petals(){const P=SEASONS[seasonOf(chap)].petals;for(let k=0;k<26;k++){const s=document.createElement('span');s.className='petal';s.style.left=Math.random()*100+'vw';s.style.background=P[k%P.length];
+  s.style.setProperty('--dx',(Math.random()*120-60)+'px');s.style.setProperty('--r',(Math.random()*720-360)+'deg');s.style.animationDuration=(3+Math.random()*3)+'s';s.style.animationDelay=Math.random()*1.5+'s';
+  document.body.appendChild(s);setTimeout(()=>s.remove(),7000)}}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+function seedUI(){$('seedN').textContent=SAVE.seeds}
+function soundUI(){$('sTxt').textContent=muted?'Geluid uit':'Geluid aan';$('sIcon').textContent=muted?'×':'♪'}
+
+// ---------- kaart ----------
+function chapRow(c){
+  const L=LANDS[landOf(c)],f=chapFirst(c),k=chapDone(c),open=chapOpen(c),d=doneSet();
+  const ic=c<20?decoSvg(L.deco[0]):c<24?wonderPic(KINDS_S[c-20][0]):decoSvg('maan');
+  const nm=c<20?L.n:c<24?'Wondertuin: '+WONDERS[KINDS_S[c-20][0]].n.toLowerCase():'Nachttuin';
+  const lock=c<20?'Op slot':c<24?'Na 25 tuinen':'Na tuin 200';
+  return`<div class="chap${open?'':' locked'}${c>=20?' special':''}${c===NIGHTC?' nightc':''}"><div class="ic${c>=20&&c<24?' ic-'+KINDS_S[c-20][0]:''}">${ic}</div><div class="nm">${nm}<div class="dots">${Array.from({length:10},(_,j)=>`<i class="${d.has(f+j)?'on':''}"></i>`).join('')}</div></div>
+   <button class="round" data-song="${c}" ${k?'':'disabled'} aria-label="Lied afspelen">▶</button><button class="chip" data-go="${c}" ${open?'':'disabled'}>${open?'Spelen':lock}</button></div>`;
+}
+function renderKaart(){
+  $('kaart').innerHTML=SEASONS.slice(0,4).map((S,s)=>`<div class="season"><h3>${S.n}</h3><span class="muted" style="margin:0">${seasonDone(s)}/50 tuinen</span></div>`+
+   [0,1,2,3,4].map(l=>chapRow(s*5+l)).join('')+chapRow(20+s)).join('')
+   +`<div class="season"><h3>Nacht</h3><span class="muted" style="margin:0">${chapDone(NIGHTC)}/10 tuinen</span></div>`+chapRow(NIGHTC);
+  songUI();
+}
+$('kaart').addEventListener('click',e=>{
+  const s=e.target.closest('[data-song]'),g=e.target.closest('[data-go]');
+  if(s&&!s.disabled){const c=+s.dataset.song;if(songBus&&songChap===c)stopSong();else{winChap=-1;playSong(c,chapDone(c))}}
+  if(g&&!g.disabled){level=frontier(+g.dataset.go);SAVE.level=level;store();mode='reis';show('spel');load()}
+});
+
+// ---------- herbarium ----------
+function renderHerb(){const N=speciesCount(),card=si=>`<div class="sp">${flowerSvg(si,'')}<b>${SPECIES[si][0]}</b><p>${SPECIES[si][1]}</p></div>`;
+  $('herbN').textContent=`${N} van de ${NORMAL.length} soorten ontdekt. Elke 5 tuinen groeit er een nieuwe.`;
+  $('herb').innerHTML=NORMAL.map((si,i)=>i<N?card(si):`<div class="sp locked">${flowerSvg(si,'')}<b>Nog onbekend</b><p>Na ${(i-2)*5} tuinen</p></div>`).join('')
+   +`<h3 class="herbh">Nachtbloemen</h3>`+NIGHTSP.map((si,j)=>nightFlowerOk(j)?card(si):`<div class="sp locked">${flowerSvg(si,'')}<b>Nog onbekend</b><p>Na nachttuin ${j?10:5}</p></div>`).join('')}
+
+// ---------- thuistuin ----------
+let sel='pad',gSeason=null;
+function renderThuis(){
+  const maxS=Math.floor((SAVE.max-1)/50),GS=[...Array(maxS+1).keys()].concat(chapOpen(NIGHTC)?[4]:[]);
+  if(gSeason===null||!GS.includes(gSeason))gSeason=GS.includes(SAVE.gseason)?SAVE.gseason:maxS;
+  $('gseas').innerHTML=GS.map(s=>`<button class="chip${s===gSeason?' on':''}" data-gs="${s}">${SEASONS[s].n}</button>`).join('');
+  const G=SEASONS[gSeason].g;
+  $('garden').innerHTML=SAVE.garden.map((k,i)=>`<div class="gt" data-t="${i}" style="background:${G[(i+Math.floor(i/6))%2]}">${k?itemSvg(k):''}</div>`).join('');
+  const N=speciesCount(),B=bloomCount();
+  const opts=[{k:'schop',n:'Schopje',c:0,ok:true}].concat(ITEMS.map(x=>({k:x.k,n:x.n,c:x.c,ok:x.at<=B,at:x.at})),availSpecies(true).map(si=>({k:'f'+si,n:SPECIES[si][0],c:1,ok:true})));
+  $('pal').innerHTML=opts.map(o=>`<button data-k="${o.k}" class="${o.k===sel?'on':''}" ${o.ok?'':'disabled'}>${o.k==='schop'?'<svg viewBox="-50 -50 100 100"><rect x="-4" y="-44" width="8" height="50" rx="3" fill="#9a6b43"/><path d="M-16 4H16V24C16 38 -16 38 -16 24Z" fill="#9aa7b0"/><rect x="-14" y="-48" width="28" height="8" rx="4" fill="#7a5233"/></svg>':itemSvg(o.k)}<span>${o.n}</span><span class="cost">${o.k==='schop'?'weghalen':o.ok?o.c+(o.c===1?' zaadje':' zaadjes'):'na '+o.at+' tuinen'}</span></button>`).join('');
+  crInGarden();
+}
+$('gseas').addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(b){gSeason=+b.dataset.gs;SAVE.gseason=gSeason;store();renderThuis()}});
+$('pal').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled){sel=b.dataset.k;$('pal').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))}});
+$('garden').addEventListener('click',e=>{
+  const t=e.target.closest('.gt');if(!t)return;const i=+t.dataset.t,old=SAVE.garden[i];audio();
+  if(sel==='schop'){if(!old)return;SAVE.seeds+=itemCost(old);SAVE.garden[i]='';tone(196,0,.6,.12)}
+  else{if(old===sel)return;const need=itemCost(sel)-(old?itemCost(old):0);
+    if(SAVE.seeds<need)return toast(`Nog ${need-SAVE.seeds} ${need-SAVE.seeds===1?'zaadje':'zaadjes'} nodig. Laat een tuin bloeien.`);
+    SAVE.seeds-=need;SAVE.garden[i]=sel;tone(392+i%6*44,0,1,.14)}
+  store();seedUI();t.innerHTML=SAVE.garden[i]?itemSvg(SAVE.garden[i],'pop'):'';
+  if(i===gPos&&SAVE.garden[i])placeCr(freeTile(gPos));
+});
+
+// ---------- navigatie ----------
+function show(v){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('.view').forEach(x=>x.hidden=x.id!=='v-'+v);
+  if(v==='kaart')renderKaart();if(v==='herb')renderHerb();if(v==='thuis')renderThuis();if(v==='spel')requestAnimationFrame(()=>place(true));window.scrollTo(0,0)}
+document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.v)});
+$('board').addEventListener('click',e=>{const c=e.target.closest('.cell');if(c)move(+c.dataset.i)});
+$('bUndo').onclick=undo;$('bReset').onclick=reset;$('bHint').onclick=hint;
+$('bSound').onclick=()=>{muted=!muted;SAVE.muted=muted;store();soundUI();if(songBus)songBus.gain.value=muted?0:1;tone(523,0,.6,.15)};
+$('bDag').onclick=()=>{mode=mode==='dag'?'reis':'dag';load()};
+$('bPrev').onclick=()=>{if(navPrev){level=navPrev;SAVE.level=level;store();load()}};
+$('bNextL').onclick=()=>{if(navNext){level=navNext;SAVE.level=level;store();load()}};
+$('bStart').onclick=()=>{$('ovHelp').classList.remove('show');SAVE.seen=2;store();tone(392,0,1);tone(523,.15,1);tone(659,.3,1.4)};
+$('bReplay').onclick=()=>{if(winChap<0)return routeSong();if(songBus&&songChap===winChap)stopSong();else playSong(winChap,winLayers)};
+$('bNext').onclick=()=>{$('ovWin').classList.remove('show');stopSong();if(mode==='dag')mode='reis';load()};
+const ro=new ResizeObserver(()=>place(true));ro.observe($('board'));
+// ---------- spelers ----------
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const player=()=>PL.list.find(x=>x.id===PID);
+const crOf=k=>CREATURES.find(x=>x.k===k)||CREATURES[0];
+const hashPin=p=>{let h=5381;for(const ch of'bloei:'+p)h=((h*33)^ch.charCodeAt(0))>>>0;return h.toString(36)};
+const openOv=id=>$(id).classList.add('show'),closeOv=id=>$(id).classList.remove('show');
+function applyTheme(){const r=document.documentElement;if(SAVE.theme)r.dataset.theme=SAVE.theme;else delete r.dataset.theme}
+function whoUI(){const p=player();$('bWho').innerHTML=p?creatureSvg(p.cr,'wz'):'';$('bWho').setAttribute('aria-label',p?`Speler: ${p.name}. Tik om te wisselen.`:'Kies een speler')}
+function danceWho(){const s=$('bWho').querySelector('svg');if(!s)return;s.classList.remove('dance');void s.getBoundingClientRect();s.classList.add('dance')}
+function usePlayer(id){
+  stopSong();closeOv('ovWin');closeOv('ovHelp');
+  PID=id;PL.last=id;savePL();SAVE=normalize(readSave(id));store();
+  level=SAVE.level&&canPlay(SAVE.level)?SAVE.level:Math.min(MAXL,SAVE.max);mode='reis';muted=!!SAVE.muted;gSeason=null;sel='pad';gPos=-1;
+  applyTheme();seedUI();soundUI();whoUI();show('spel');load();closeOv('ovWho');
+  if(SAVE.seen!==2)openOv('ovHelp');else toast(`Welkom terug, ${player().name}!`);
+}
+
+// kiezen
+let manage=false;
+function openWho(){manage=false;renderWho();openOv('ovWho')}
+function renderWho(){
+  const has=PL.list.length;
+  $('whoP').textContent=manage?'Tik op een speler om hem aan te passen of te wissen.':has?'Tik op je wezentje.':'Maak je eerste speler.';
+  $('whoGrid').innerHTML=PL.list.map(p=>{const n=(readSave(p.id).done||[]).length;
+    return`<button class="pc" data-p="${p.id}">${manage?'<span class="ed" aria-hidden="true">✎</span>':''}${p.pin?'<span class="lock" title="Met pincode">🔒</span>':''}${creatureSvg(p.cr,'wz bob')}<span>${esc(p.name)}</span><small>${n} ${n===1?'tuin':'tuinen'}</small></button>`}).join('')
+   +(!manage&&has<MAXP?'<button class="pc add" id="bAdd"><b style="font-size:32px;line-height:1">+</b>Nieuwe speler</button>':'');
+  $('bManage').hidden=!has;$('bManage').textContent=manage?'Klaar':'Beheren';
+  $('bWhoClose').hidden=!PID||manage;
+}
+$('whoGrid').addEventListener('click',e=>{
+  audio();
+  if(e.target.closest('#bAdd'))return openNew(null);
+  const b=e.target.closest('[data-p]');if(!b)return;const p=PL.list.find(x=>x.id===b.dataset.p);if(!p)return;
+  if(manage)return withPin(p,()=>openNew(p));
+  if(p.id===PID)return closeOv('ovWho');
+  withPin(p,()=>usePlayer(p.id));
+});
+$('bManage').onclick=()=>{manage=!manage;renderWho()};
+$('bWhoClose').onclick=()=>closeOv('ovWho');
+$('bWho').onclick=()=>{audio();openWho()};
+
+// pincode (een slotje tegen per ongeluk spelen of wissen, geen echte beveiliging)
+let PIN=null;
+function withPin(p,ok){if(!p.pin)return ok();openPin({mode:'check',p,ok})}
+function openPin(o){PIN=Object.assign({buf:'',first:null,forgot:null},o);pinUI();openOv('ovPin')}
+function pinUI(){
+  const P=PIN,len=P.forgot?2:4;
+  $('pinCr').innerHTML=P.p?creatureSvg(P.p.cr,'wz bob'):'';
+  $('pinT').textContent=P.forgot?'Vraag voor een grote mens':P.mode==='set'?(P.first?'Nog een keer':'Kies een pincode'):`Pincode van ${P.p.name}`;
+  $('pinP').textContent=P.forgot?`Hoeveel is ${P.forgot[0]} × ${P.forgot[1]}? Juist geantwoord, dan verdwijnt de pincode.`:P.mode==='set'?(P.first?'Tik dezelfde 4 cijfers nog eens.':'Kies 4 cijfers die je goed onthoudt.'):'Tik je 4 cijfers.';
+  $('pins').innerHTML=Array.from({length:len},(_,i)=>`<i class="${i<P.buf.length?'on':''}"></i>`).join('');
+  $('bForgot').hidden=P.mode!=='check'||!!P.forgot;
+}
+$('keys').innerHTML=['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k=>`<button data-k="${k}" ${k?'':'disabled'} aria-label="${k==='⌫'?'Wissen':k}">${k}</button>`).join('');
+function pinKey(k){
+  if(!PIN)return;const len=PIN.forgot?2:4;
+  if(k==='⌫'){PIN.buf=PIN.buf.slice(0,-1);return pinUI()}
+  if(!/^\d$/.test(k)||PIN.buf.length>=len)return;
+  PIN.buf+=k;tone(440+PIN.buf.length*60,0,.3,.08);pinUI();
+  if(PIN.buf.length===len)setTimeout(checkPin,180);
+}
+function pinFail(msg){const P=$('pins');P.classList.remove('shake');void P.offsetWidth;P.classList.add('shake');tone(165,0,.5,.12);PIN.buf='';pinUI();if(msg)toast(msg)}
+function checkPin(){
+  const P=PIN;if(!P)return;
+  if(P.forgot){if(+P.buf===P.forgot[0]*P.forgot[1]){delete P.p.pin;savePL();closeOv('ovPin');PIN=null;toast('De pincode is weg. Een nieuwe kies je bij Beheren.');renderWho();P.ok()}else pinFail('Dat klopt niet.');return}
+  if(P.mode==='check'){if(hashPin(P.buf)===P.p.pin){closeOv('ovPin');PIN=null;P.ok()}else pinFail('Dat is niet de juiste pincode.');return}
+  if(!P.first){P.first=P.buf;P.buf='';return pinUI()}
+  if(P.first===P.buf){closeOv('ovPin');PIN=null;P.ok(hashPin(P.buf))}else{P.first=null;pinFail('Niet hetzelfde. Begin opnieuw.')}
+}
+$('keys').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)pinKey(b.dataset.k)});
+document.addEventListener('keydown',e=>{if(!$('ovPin').classList.contains('show'))return;if(/^\d$/.test(e.key))pinKey(e.key);else if(e.key==='Backspace')pinKey('⌫');else if(e.key==='Escape')$('bPinCancel').click()});
+$('bForgot').onclick=()=>{PIN.forgot=[6+Math.floor(Math.random()*4),6+Math.floor(Math.random()*4)];PIN.buf='';pinUI()};
+$('bPinCancel').onclick=()=>{closeOv('ovPin');PIN=null};
+
+// nieuwe speler of aanpassen
+let DRAFT=null;
+function openNew(p){
+  const free=CREATURES.find(c=>!PL.list.some(x=>x.cr===c.k))||CREATURES[0];
+  DRAFT=p?{id:p.id,cr:p.cr,pin:p.pin||null,theme:readSave(p.id).theme||''}:{id:null,cr:free.k,pin:null,theme:''};
+  $('newT').textContent=p?'Speler aanpassen':PL.list.length?'Nieuwe speler':'Welkom in Bloeisprong';
+  $('nmIn').value=p?p.name:free.n;
+  $('bDel').hidden=!p;$('bNewCancel').hidden=!PL.list.length;
+  renderNew();openOv('ovNew');
+}
+function renderNew(){
+  $('crGrid').innerHTML=CREATURES.map(c=>`<button class="cr${c.k===DRAFT.cr?' on':''}" data-c="${c.k}" aria-label="${c.n}">${creatureSvg(c.k,c.k===DRAFT.cr?'wz bob':'wz')}</button>`).join('');
+  const c=crOf(DRAFT.cr);$('crD').innerHTML=`<b>${c.n}</b>, ${c.d}.`;
+  $('pinSeg').innerHTML=`<button class="chip${DRAFT.pin?'':' on'}" data-pin="0">Geen</button><button class="chip${DRAFT.pin?' on':''}" data-pin="1">${DRAFT.pin?'Ingesteld · wijzigen':'Instellen'}</button>`;
+  $('thSeg').innerHTML=[['','Automatisch'],['light','Licht'],['dark','Donker']].map(([v,n])=>`<button class="chip${DRAFT.theme===v?' on':''}" data-th="${v}">${n}</button>`).join('');
+}
+$('crGrid').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;audio();
+  const old=crOf(DRAFT.cr).n,v=$('nmIn').value.trim();DRAFT.cr=b.dataset.c;
+  if(!v||v===old)$('nmIn').value=crOf(DRAFT.cr).n;
+  tone(523+CREATURES.findIndex(x=>x.k===DRAFT.cr)*30,0,.6,.12);renderNew()});
+$('pinSeg').addEventListener('click',e=>{const b=e.target.closest('[data-pin]');if(!b)return;
+  if(b.dataset.pin==='0'){DRAFT.pin=null;return renderNew()}
+  openPin({mode:'set',p:{cr:DRAFT.cr,name:$('nmIn').value},ok:h=>{DRAFT.pin=h;renderNew()}})});
+$('thSeg').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(b){DRAFT.theme=b.dataset.th;renderNew()}});
+$('nmIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('nmIn').blur()}});
+$('bNewCancel').onclick=()=>{closeOv('ovNew');DRAFT=null};
+$('bNewOk').onclick=()=>{
+  const name=$('nmIn').value.trim().slice(0,14)||crOf(DRAFT.cr).n;
+  if(DRAFT.id){
+    const p=PL.list.find(x=>x.id===DRAFT.id);p.cr=DRAFT.cr;p.name=name;if(DRAFT.pin)p.pin=DRAFT.pin;else delete p.pin;savePL();
+    if(p.id===PID){SAVE.theme=DRAFT.theme;store();applyTheme();whoUI()}else{const S=readSave(p.id);S.theme=DRAFT.theme;writeSave(p.id,S)}
+    closeOv('ovNew');renderWho();toast(`${name} is aangepast.`);
+  }else{
+    const id='p'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);
+    const p={id,cr:DRAFT.cr,name,made:Date.now()};if(DRAFT.pin)p.pin=DRAFT.pin;
+    PL.list.push(p);savePL();writeSave(id,normalize({theme:DRAFT.theme}));
+    closeOv('ovNew');tone(392,0,1);tone(523,.15,1);tone(659,.3,1.4);usePlayer(id);
+  }
+  DRAFT=null;
+};
+let askYes=null;
+function ask(t,p,cr,yes){$('askT').textContent=t;$('askP').textContent=p;$('askCr').innerHTML=cr?creatureSvg(cr,'wz'):'';askYes=yes;openOv('ovAsk')}
+$('bAskNo').onclick=()=>{closeOv('ovAsk');askYes=null};
+$('bAskYes').onclick=()=>{closeOv('ovAsk');const f=askYes;askYes=null;if(f)f()};
+$('bDel').onclick=()=>{
+  const p=PL.list.find(x=>x.id===DRAFT.id);if(!p)return;
+  ask(`${p.name} wissen?`,`Alle tuinen, zaadjes, het herbarium en de thuistuin van ${p.name} verdwijnen van dit toestel. Dat kan je niet ongedaan maken.`,p.cr,()=>{
+    try{localStorage.removeItem(PFX+p.id)}catch(e){}
+    PL.list=PL.list.filter(x=>x.id!==p.id);if(PL.last===p.id)delete PL.last;savePL();
+    closeOv('ovNew');DRAFT=null;
+    if(p.id===PID){PID=null;SAVE={};stopSong();whoUI()}
+    toast(`${p.name} is gewist.`);
+    if(!PL.list.length){manage=false;closeOv('ovWho');return openNew(null)}
+    renderWho();openOv('ovWho');
+  });
+};
+
+// wezentje in de thuistuin
+let gPos=-1,gTimer=0;
+function placeCr(i){const el=$('gcr');gPos=i;el.style.left=(i%6)*100/6+'%';el.style.top=Math.floor(i/6)*100/8+'%'}
+function freeTile(near){
+  const fr=SAVE.garden.map((k,i)=>k?-1:i).filter(i=>i>=0);if(!fr.length)return Math.max(0,near);
+  if(near>=0){const nb=fr.filter(i=>i!==near&&Math.abs(i%6-near%6)<=1&&Math.abs(Math.floor(i/6)-Math.floor(near/6))<=1);if(nb.length)return nb[Math.floor(Math.random()*nb.length)]}
+  return fr[Math.floor(Math.random()*fr.length)];
+}
+function crInGarden(){
+  const p=player(),el=$('gcr');if(!p){el.hidden=true;return}
+  el.hidden=false;el.innerHTML=creatureSvg(p.cr,'wz bob');
+  if(gPos<0||SAVE.garden[gPos]){el.style.transition='none';placeCr(freeTile(-1));void el.offsetWidth;el.style.transition=''}
+}
+// ---------- grapjes, weetjes, wijsheden en raadsels ----------
+// Eigen lijst (Nederlands, ook offline). Online komt daar af en toe een Engelse grap van JokeAPI bij.
+const TALK=[
+ {t:'weetje',q:'Een jonge zonnebloem draait de hele dag met de zon mee.'},
+ {t:'weetje',q:'Bijen dansen om elkaar te vertellen waar de bloemen staan.'},
+ {t:'weetje',q:'Een regenworm heeft vijf paar kleine hartjes.'},
+ {t:'weetje',q:'Een slak heeft duizenden piepkleine tandjes op zijn tong.'},
+ {t:'weetje',q:'Egels slapen de hele winter door.'},
+ {t:'weetje',q:'Kikkers drinken door hun huid.'},
+ {t:'weetje',q:'Vuurvliegjes maken koud licht: zonder warmte.'},
+ {t:'weetje',q:'Een sneeuwvlok heeft zes armen.'},
+ {t:'weetje',q:'In de herfst verdwijnt het bladgroen. Dan zie je de gele en oranje kleuren die er al zaten.'},
+ {t:'weetje',q:'Planten maken hun eten zelf, van zonlicht, water en lucht.'},
+ {t:'weetje',q:'Een madeliefje sluit zich in de avond en gaat in de ochtend weer open.'},
+ {t:'weetje',q:'Appels drijven op water, omdat er veel lucht in zit.'},
+ {t:'weetje',q:'Vlinders proeven met hun pootjes.'},
+ {t:'weetje',q:'Een mier kan veel meer tillen dan zijn eigen gewicht.'},
+ {t:'weetje',q:'De pluisjes van een paardenbloem kunnen heel ver wegwaaien.'},
+ {t:'weetje',q:'Een mol ziet bijna niets, maar voelt en ruikt des te beter.'},
+ {t:'weetje',q:'Hommels trillen met hun vliegspieren om warm te worden.'},
+ {t:'weetje',q:'Een klaproos laat zijn zaadjes soms tientallen jaren slapen in de grond.'},
+ {t:'weetje',q:'Het blad van een waterlelie drijft door kleine luchtkamertjes.'},
+ {t:'weetje',q:'De wortels van helmgras houden het zand van de duinen vast.'},
+ {t:'weetje',q:'In de zeventiende eeuw waren tulpenbollen in Nederland razend populair, en soms heel duur.'},
+ {t:'weetje',q:'Regenwormen maken de aarde los, zodat er lucht bij de wortels komt.'},
+ {t:'wijsheid',q:'Wie geduld heeft, ziet de bloem opengaan.'},
+ {t:'wijsheid',q:'Kleine stapjes komen ook aan.'},
+ {t:'wijsheid',q:'Na regen komt zonneschijn.'},
+ {t:'wijsheid',q:'Een tuin groeit niet sneller als je eraan trekt.'},
+ {t:'wijsheid',q:'Elke reis begint met één sprong.'},
+ {t:'wijsheid',q:'Wie zaait, zal oogsten.'},
+ {t:'wijsheid',q:'Rust is ook vooruitgang.'},
+ {t:'wijsheid',q:'Soms moet je een stap terug om verder te komen.'},
+ {t:'wijsheid',q:'Zonder winter geen lente.'},
+ {t:'wijsheid',q:'Wat je water geeft, groeit.'},
+ {t:'wijsheid',q:'Haast is voor wie de bloemen niet ruikt.'},
+ {t:'wijsheid',q:'Een gedeelde tuin bloeit dubbel.'},
+ {t:'wijsheid',q:'Wie niet waagt, die niet wint.'},
+ {t:'wijsheid',q:'Elke knop bloeit op zijn eigen tijd.'},
+ {t:'wijsheid',q:'In het donker zie je de sterren.'},
+ {t:'wijsheid',q:'Lach vaak, zeker om jezelf.'},
+ {t:'raadsel',q:'Wat groeit er naar beneden?',a:'Een ijspegel.'},
+ {t:'raadsel',q:'Wat wordt natter naarmate het meer droogt?',a:'Een handdoek.'},
+ {t:'raadsel',q:'Wat heeft bladeren maar is geen boom?',a:'Een boek.'},
+ {t:'raadsel',q:'Wat heeft een hart maar klopt niet?',a:'Een artisjok.'},
+ {t:'raadsel',q:'Wat kan je vangen maar niet gooien?',a:'Een verkoudheid.'},
+ {t:'raadsel',q:'Wat heeft tanden maar kan niet bijten?',a:'Een kam.'},
+ {t:'raadsel',q:'Hoe meer je er weghaalt, hoe groter het wordt. Wat is het?',a:'Een gat.'},
+ {t:'raadsel',q:'Wat loopt maar heeft geen benen?',a:'Een rivier.'},
+ {t:'raadsel',q:'Wat heeft vijf vingers maar leeft niet?',a:'Een handschoen.'},
+ {t:'raadsel',q:'Wat valt maar breekt nooit, en wat breekt maar valt nooit?',a:'De nacht valt, de dag breekt aan.'},
+ {t:'raadsel',q:'Wat gaat de hele dag op en neer maar blijft op dezelfde plek?',a:'Een trap.'},
+ {t:'raadsel',q:'Wat is zwart, wit en overal gelezen?',a:'Een krant.'}];
+const TLABEL={weetje:'Weetje',wijsheid:'Wijsheid',raadsel:'Raadsel',grap:'Grap (Engels)'};
+const JOKE_URL='https://v2.jokeapi.dev/joke/Any?lang=en&blacklistFlags=nsfw,explicit,racist,sexist';
+let jokeBuf=null,jokeBusy=false;
+function fetchJoke(){
+  if(jokeBusy||jokeBuf||!navigator.onLine||!/^https?:$/.test(location.protocol))return;
+  jokeBusy=true;let ac=null,to=0;
+  try{ac=new AbortController();to=setTimeout(()=>ac.abort(),3000)}catch(e){}
+  fetch(JOKE_URL,{signal:ac&&ac.signal,cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j||j.error)return;
+    const f=j.flags||{};if(f.nsfw||f.explicit||f.racist||f.sexist)return;
+    const ok=s=>typeof s==='string'&&s.trim().length>0&&s.length<400;
+    if(j.type==='single'&&ok(j.joke))jokeBuf={t:'grap',q:j.joke.trim()};
+    else if(j.type==='twopart'&&ok(j.setup)&&ok(j.delivery))jokeBuf={t:'grap',q:j.setup.trim(),a:j.delivery.trim()};
+  }).catch(()=>{}).finally(()=>{clearTimeout(to);jokeBusy=false});
+}
+window.addEventListener('online',fetchJoke);
+const recentT=[];
+function pickTalk(){
+  let it=null;
+  if(jokeBuf&&Math.random()<.5){it=jokeBuf;jokeBuf=null}
+  if(!it){let k,g=0;do{k=Math.floor(Math.random()*TALK.length)}while(recentT.includes(k)&&++g<30);recentT.push(k);if(recentT.length>12)recentT.shift();it=TALK[k]}
+  fetchJoke();return it;
+}
+const talkHtml=(it,rev)=>`<span class="tl">${TLABEL[it.t]}</span>${esc(it.q)}${it.a?(rev?`<span class="ta">${esc(it.a)}</span>`:'<span class="th">Tik voor het antwoord</span>'):''}`;
+const talkMs=it=>2800+(it.q.length+(it.a?it.a.length:0))*55;
+
+let talkPend=null;
+function endBubble(){const p=player();talkPend=null;if(p){$('gcr').innerHTML=creatureSvg(p.cr,'wz bob');placeCr(freeTile(gPos))}}
+$('gcr').addEventListener('click',()=>{
+  const p=player();if(!p)return;const c=crOf(p.cr),el=$('gcr'),col=gPos%6,row=Math.floor(gPos/6);audio();
+  const pos=(col===0?' l':col===5?' r':'')+(row<2?' down':'');
+  if(talkPend){const it=talkPend;talkPend=null;
+    el.innerHTML=creatureSvg(p.cr,'wz cheer')+`<div class="bubble wide${pos}">${talkHtml(it,true)}</div>`;
+    tone(659,0,.5,.1);tone(880,.12,.8,.09);clearTimeout(gTimer);gTimer=setTimeout(endBubble,talkMs(it)+1500);return}
+  let it,html;
+  if(Math.random()<.25){const q=c.q[Math.floor(Math.random()*c.q.length)];it={q};html=esc(q)}
+  else{it=pickTalk();html=talkHtml(it,false);if(it.a)talkPend=it}
+  el.innerHTML=creatureSvg(p.cr,'wz cheer')+`<div class="bubble${it.t?' wide':''}${pos}">${html}</div>`;
+  tone(523,0,.5,.12);tone(659,.12,.6,.1);tone(784,.24,.8,.08);
+  clearTimeout(gTimer);gTimer=setTimeout(endBubble,it.a?30000:talkMs(it));
+});
+setInterval(()=>{if(!$('v-thuis').hidden&&player()&&!document.hidden&&!$('gcr').querySelector('.bubble'))placeCr(freeTile(gPos))},5200);
+
+// ---------- start ----------
+$('seedIc').innerHTML=SEED;
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}
+if(!PL.list.length)openNew(null);else openWho();
+fetchJoke();
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
+}
+</script>
+</body>
+</html>
