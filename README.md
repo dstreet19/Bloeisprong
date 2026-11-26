@@ -15,6 +15,19 @@ De **nachttuin** (10 tuinen) opent na tuin 200 en mengt alle wonderen. Na nachtt
 
 Het spel werkt als app op iPhone, iPad en Android (een PWA) en ook offline.
 
+## Thuistuin
+
+- Je begint met 10 rijen van 6 vakjes. Met **+ Stukje grond** koop je 2 rijen extra, tot 20 rijen. Het eerste stukje kost 6 zaadjes, elk volgend 3 zaadjes meer (6, 9, 12, 15, 18).
+- **Tuin leegmaken** haalt alles weg en geeft je de zaadjes ervan terug. De gekochte grond blijft.
+
+## Back-up
+
+De voortgang staat alleen op het toestel. Maak daarom af en toe een back-up:
+
+- **Maken:** tik op je wezentje → **Beheren** → de speler → **Back-up maken**. Kopieer de code of bewaar hem als bestand (op iPhone en iPad via Delen, bv. naar Bestanden of een berichtje aan jezelf).
+- **Terugzetten:** op het scherm "Wie speelt er?" → **Back-up terugzetten** → plak de code of kies het bestand. Staat de speler al op het toestel, dan vraagt het spel eerst of je hem wil vervangen.
+- De back-up bevat de voortgang, zaadjes, thuistuin, instellingen en de pincode van één speler.
+
 ## Grapjes, weetjes en wijsheden
 
 Tik in de thuistuin op je wezentje, of kijk op de winstkaart na een tuin: het wezentje vertelt dan iets.
@@ -28,7 +41,7 @@ Tik in de thuistuin op je wezentje, of kijk op de winstkaart na een tuin: het we
 
 - Alles wordt alleen op het toestel bewaard. Er is geen server en geen account.
 - Bij het openen kies je je speler of maak je een nieuwe: kies een wezentje en geef het een naam.
-- Elke speler heeft een eigen voortgang, zaadjes, herbarium, thuistuin en instellingen (geluid, thema).
+- Elke speler heeft een eigen voortgang, zaadjes, herbarium, thuistuin en instellingen (geluid, thema, tekstgrootte: normaal, groot of extra groot).
 - Een speler kan een pincode van 4 cijfers krijgen. Die werkt als **slotje**, niet als echte beveiliging: ze voorkomt dat iemand per ongeluk op de verkeerde speler speelt of hem wist. Pincode vergeten? Tik op "Pincode vergeten?" en beantwoord de rekenvraag voor een grote mens. Dan verdwijnt de pincode.
 - Wisselen: tik rechtsboven op je wezentje. Aanpassen of wissen: "Beheren".
 
@@ -57,8 +70,8 @@ README.md               deze uitleg
 ## Een nieuwe versie uitbrengen
 
 1. Vervang de gewijzigde bestanden op GitHub.
-2. Verhoog in `sw.js` het nummer in `const VERSIE = 'bloeisprong-v1';` (bv. naar `v2`).
-3. De toestellen halen de nieuwe versie op wanneer ze online zijn en het spel openen. Soms moet je de app een keer sluiten en opnieuw openen.
+2. Verhoog in `sw.js` het nummer in `const VERSIE = 'bloeisprong-v4';` (bv. naar `v5`).
+3. Het spel start altijd meteen uit het geheugen van het toestel, ook bij traag internet. Is er een nieuwe versie, dan wordt die op de achtergrond opgehaald en zie je ze **de volgende keer** dat je het spel opent.
 
 De voortgang van de spelers blijft bij een update gewoon bewaard.
 

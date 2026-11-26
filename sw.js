@@ -1,6 +1,6 @@
 // Bloeisprong service worker: maakt het spel offline speelbaar.
 // Verhoog VERSIE bij elke nieuwe uitgave, dan halen de toestellen de nieuwe bestanden op.
-const VERSIE = 'bloeisprong-v2';
+const VERSIE = 'bloeisprong-v4';
 const LETTERS = 'bloeisprong-letters';
 const KERN = [
   './',
@@ -33,16 +33,25 @@ self.addEventListener('fetch', e => {
   // Grapjes van JokeAPI nooit bewaren: altijd rechtstreeks van het netwerk.
   if (url.hostname === 'v2.jokeapi.dev') return;
 
-  // De pagina zelf: eerst online (zo komen updates binnen), offline uit de cache.
+  // De pagina zelf: meteen uit het geheugen (snelle start, ook bij traag internet).
+  // Tegelijk wordt online de nieuwste versie opgehaald en bewaard; die zie je bij de volgende start.
   if (req.mode === 'navigate' || (url.origin === location.origin && url.pathname.endsWith('/index.html'))) {
-    e.respondWith(
-      fetch(req)
-        .then(res => {
+    const pad = url.pathname;
+    const vers = fetch(req)
+      .then(res => {
+        // Alleen een geldige spelpagina bewaren, nooit een foutpagina (bv. 404 bij een tikfout in de link).
+        if (res.ok && (pad.endsWith('/') || pad.endsWith('/index.html'))) {
           const kopie = res.clone();
-          caches.open(VERSIE).then(c => c.put('index.html', kopie));
-          return res;
-        })
-        .catch(() => caches.match('index.html').then(r => r || caches.match('./')))
+          return caches.open(VERSIE).then(c => c.put('index.html', kopie)).then(() => res);
+        }
+        return res;
+      })
+      .catch(() => null);
+    e.waitUntil(vers);
+    e.respondWith(
+      caches.match('index.html')
+        .then(hit => hit || vers.then(res => res || caches.match('./')))
+        .then(res => res || Response.error())
     );
     return;
   }
